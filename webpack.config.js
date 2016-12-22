@@ -5,6 +5,8 @@ module.exports = {
   entry: {
     "test": './src/test.js',
     'node': './src/node.js',
+    'token': './src/token.js',
+    'rules': './src/rules.js',
   },
 
   output: {
