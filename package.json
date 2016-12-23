@@ -1,6 +1,6 @@
 {
   "name": "markdown-x",
-  "version": "0.1.2-beta",
+  "version": "0.1.2-beta.2",
   "description": "js, Node.js  Markdown parser",
   "main": "/dist/token.min.js",
   "scripts": {
