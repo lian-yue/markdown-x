@@ -76,7 +76,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	      switch (_context.prev = _context.next) {
 	        case 0:
 	          _context.next = 2;
-	          return fetch('/README.md');
+	          return fetch('./README.md');
 	
 	        case 2:
 	          data = _context.sent;
@@ -95,7 +95,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	          console.log('timems: ' + (Date.now() - now));
 	
 	          _context.next = 13;
-	          return fetch('/test.md');
+	          return fetch('./test.md');
 	
 	        case 13:
 	          data = _context.sent;

@@ -5,7 +5,7 @@ const Node = require('./node');
 
 (async function() {
 
-  var data = await fetch('/README.md')
+  var data = await fetch('./README.md')
   data = await data.text()
 
   var now = Date.now()
@@ -19,7 +19,7 @@ const Node = require('./node');
 
 
 
-  var data = await fetch('/test.md')
+  var data = await fetch('./test.md')
   data = await data.text()
 
   var textarea = document.querySelector('#textarea')
