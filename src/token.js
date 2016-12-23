@@ -2018,7 +2018,7 @@ Token.addAttribute('style', function (value, nodeHtml) {
       continue
     }
     value = style.substr(index + 1).toLowerCase().trim()
-    if (value && !/^[^\(\)\[\]'"\:\\]$/.test(value)) {
+    if (value && !/^[^\(\)\[\]'"\:&;\\]$/.test(decodeURIComponent(this.unescapeHtml(value)))) {
       continue
     }
     results.push(name + ':' + value)
