@@ -1,17 +1,17 @@
-export var NESTING = 16
+const NESTING = 16
 
-export var SPACE = " "
+const SPACE = " "
 
-export var TAB = "\t"
+const TAB = "\t"
 
-export var NEWLINE = "\n"
+const NEWLINE = "\n"
 
-export var NEWLINE_SPLIT = /(?:\r\n|[\r\n\u2424])/
+const NEWLINE_SPLIT = /(?:\r\n|[\r\n\u2424])/
 
 
-export var TAG_NAME = /[ \t\r\n\0\x0B\u00a0\/>]/
+const TAG_NAME = /[ \t\r\n\0\x0B\u00a0\/>]/
 
-export var TAG_END = /[ \t\r\n\0\x0B\u00a0>]/
+const TAG_END = /[ \t\r\n\0\x0B\u00a0>]/
 
 
 
@@ -225,6 +225,12 @@ class Token {
     return this.variables[name]
   }
 
+  static options = {
+    prefix: '',
+    protocols: ['http', 'https', 'tel', 'mailto'],
+    styles: {'text-align': true},
+  }
+
 
   // 全部规则
   rules = {}
@@ -277,7 +283,7 @@ class Token {
   constructor(parentNode, document, data, options) {
     this.parentNode = parentNode
     this.document = document
-    this.options = options || {}
+    this.options = Object.assign({}, this.constructor.options, options || {})
     this.parserRules()
     this.prepare(data)
     this.parser()
@@ -373,7 +379,7 @@ class Token {
 
     // 处理 match
     var blockMatch = '((?:^|{{$newline}}){{$blank}}*?)(?:%s)(?:(?={{$newline}})|$)'
-    var inlineMatch = '(^|(?!{{$backslash}}).(?:{{$backslash}}{2})*)(?:%s)'
+    var inlineMatch = '((?:^|(?!{{$backslash}}).)(?:{{$backslash}}{2})*)(?:%s)'
     this.documentMatch = this.parserMatch(documents, blockMatch)
     this.blockMatch = this.parserMatch(blocks, blockMatch)
     this.inlineMatch = this.parserMatch(inlines, inlineMatch)
@@ -660,7 +666,7 @@ class Token {
         continue
       }
       if (this.constructor.attributes[name]) {
-        value = this.constructor.attributes[name].call(node, value, name)
+        value = this.constructor.attributes[name].call(this, value, nodeHtml, node, name)
       } else if (nodeHtml) {
         continue
       }
@@ -1007,7 +1013,7 @@ Token.addRule('$blocktext', {match: /(?:{{$blank}}*?{{$newline}}){2,}/})
 
 
 
-Token.addRule('$escape_backslash', {match: /[\s\S]*?[^{{$backslash}}](?:{{$backslash}}{2})*/})
+Token.addRule('$escape_backslash', {match: /[\s\S]*?(?!{{$backslash}}).(?:{{$backslash}}{2})*/})
 
 Token.addRule('$header_id_replace',{match: /<.+?>|{{$escape}}/g})
 Token.addRule('$link_image',{match: /\[((?:\[[^\]]*\]|[^\[\]]|\](?=[^\[]*\]))*)\](?:{{$blank}}|{{$newline}})?(?:\({{$blank}}*{{$lt}}?(.*?){{$gt}}?(?:{{$blank}}+{{$quote}}(.*?){{$quote}})?{{$blank}}*\)|\[([^\^\[\]]*)\])/})
@@ -1218,7 +1224,7 @@ Token.addRule(
 Token.addRule(
   'md_header',
   {
-    match: /({{$number}}{1,6}){{$blank}}(.*?)\#*|((?!{{$blank}})..*){{$newline}}{{$blank}}*({{$equals}}|{{$minus}}){{$blank}}?(?:\4{{$blank}}?)*/,
+    match: /({{$number}}{1,6}){{$blank}}*(.*?)\#*|((?!{{$blank}})..*){{$newline}}{{$blank}}*({{$equals}}|{{$minus}}){{$blank}}?(?:\4{{$blank}}?)*/,
     block: true,
     priority: 25,
     prepare(match) {
@@ -1226,7 +1232,7 @@ Token.addRule(
         this.nextLine()
         return {
           nodeName: 'h' + match[1].length,
-          attributes: {id: this.escapeId('header-' + match[2].replace(this.rules.$header_id_replace.match, ''))},
+          attributes: {id: this.escapeId(this.options.prefix + 'header-' + match[2].replace(this.rules.$header_id_replace.match, ''))},
           children: match[2],
         }
       } else {
@@ -1234,7 +1240,7 @@ Token.addRule(
         this.nextLine()
         return {
           nodeName: this.rules.$equals.match.test(match[4]) ? 'h1' : 'h2',
-          attributes: {id: 'header-' + this.escapeId(match[3].replace(this.rules.$header_id_replace.match, ''))},
+          attributes: {id: this.options.prefix + 'header-' + this.escapeId(match[3].replace(this.rules.$header_id_replace.match, ''))},
           children: match[3],
         }
       }
@@ -1245,13 +1251,13 @@ Token.addRule(
 Token.addRule(
   'md_list',
   {
-    match:/(?:({{$asterisk}}|{{$plus}}|{{$minus}})|(\d+{{$doc}})){{$blank}}(.*)/,
+    match:/(?:({{$asterisk}}|{{$plus}}|{{$minus}})|(\d+{{$doc}})){{$blank}}(?:{{$blank}}?\[({{$space}}|x)\])?(.*)/,
     block: true,
     priority: 30,
     prepare(match) {
       var list = []
-      var li = [match[3]]
-
+      var li = [match[4]]
+      var checkboxs = [match[3]]
 
       var current
       var empty
@@ -1287,7 +1293,8 @@ Token.addRule(
               li.pop()
             }
             list.push(li)
-            li = [match2.match[3]]
+            li = [match2.match[4]]
+            checkboxs.push(match2.match[3])
           } else {
             break
           }
@@ -1306,6 +1313,8 @@ Token.addRule(
 
       var li
       var p
+      var checkbox
+      var checkboxNode
       this.push({nodeName: match[2] ? 'ol' : 'ul'})
       for (var i = 0; i < list.length; i++) {
         li = this.push({nodeName:'li', children: list[i]}, true)
@@ -1314,6 +1323,19 @@ Token.addRule(
             li.insertBefore(p.childNodes[0], p)
           }
           li.removeChild(p)
+          checkbox = checkboxs[i]
+          if (checkbox) {
+            checkboxNode = this.createNode({nodeName:'input', attributes:{type: 'checkbox', class: 'task-list-item-checkbox', disabled:true, checked: checkbox.toLowerCase()== 'x'}})
+            if (li.childNodes.length) {
+              li.insertBefore(checkboxNode, li.childNodes[0])
+            } else {
+              li.appendChild(checkboxNode)
+            }
+            this.setAttributes(li, {class: 'task-list-item'})
+            if (!li.parentNode.getAttribute('class')) {
+              this.setAttributes(li.parentNode, {class:'task-list'})
+            }
+          }
         }
       }
       this.pop()
@@ -1544,9 +1566,9 @@ Token.addRule(
         varName: ['footnote', match[1].toLowerCase()],
         attributes: {
           class: 'footnote',
-          id: 'footnote-' + id,
-          'data-href': '#refnote-' + id,
-          style: 'display: none',
+          id: this.options.prefix + 'footnote-' + id,
+          'data-href': '#'+ this.options.prefix +'refnote-' + id,
+          style: 'display:none',
         },
         children,
       }
@@ -1666,7 +1688,7 @@ Token.addRule(
     prepare(match) {
       return {
         nodeName:'em',
-        children: match[3],
+        children: match[2],
       }
     }
   }
@@ -1705,7 +1727,7 @@ Token.addRule(
           alt: match[1],
           src: match[2],
           title: match[3],
-          'data-value': match[0],
+          'data-value': typeof match[4] == 'string' ? match[0] : null,
         },
       }
     }
@@ -1797,9 +1819,9 @@ Token.addRule(
         varName: ['refnote', match[1].toLowerCase()],
         attributes: {
           class: 'refnote',
-          id: 'refnote-' + id,
-          href: '#footnote-' + id,
-          title: this.options.toFootnote + 'See footnote',
+          id: this.options.prefix +'refnote-' + id,
+          href: '#'+ this.options.prefix +'footnote-' + id,
+          title: this.options.toFootnote || 'See footnote',
           'data-value': match[0],
         },
         children: [
@@ -1827,36 +1849,6 @@ Token.addRule(
     }
   }
 )
-
-
-
-Token.addAttribute('href', function (value) {
-  return value
-})
-
-Token.addAttribute('class', function (value) {
-  return value
-})
-
-Token.addAttribute('id', function (value) {
-  return value
-})
-
-Token.addAttribute('src', function (value) {
-  return value
-})
-
-Token.addAttribute('name', function (value) {
-  return value
-})
-
-Token.addAttribute('value', function (value) {
-  return value
-})
-
-Token.addAttribute('title', function (value) {
-  return value
-})
 
 
 Token.addVariable('image', function(varName, node) {
@@ -1965,6 +1957,75 @@ Token.addVariable('toc', function(varName, node) {
     ul.appendChild(li)
   }
 })
+
+
+
+
+Token.addAttribute('href', function (value) {
+  value = String(value)
+  try {
+    var prot = decodeURIComponent(this.unescapeHtml(value)).replace(/[^\w:]/g, '').toLowerCase();
+  } catch (e) {
+    return false
+  }
+  var match = prot.match(/^(\w+)\:/)
+  if (match && this.options.protocols.indexOf(match[1]) == -1) {
+    return false;
+  }
+  return value
+})
+
+Token.addAttribute('src', function (value) {
+  value = String(value)
+  try {
+    var prot = decodeURIComponent(this.unescapeHtml(value)).replace(/[^\w:]/g, '').toLowerCase();
+  } catch (e) {
+    return false
+  }
+  var match = prot.match(/^(\w+)\:/)
+  if (match && this.options.protocols.indexOf(match[1]) == -1) {
+    return false;
+  }
+  return value
+})
+
+Token.addAttribute('title', function (value) {
+  return value
+})
+
+Token.addAttribute('alt', function (value) {
+  return value
+})
+
+Token.addAttribute('style', function (value, nodeHtml) {
+  if (!nodeHtml) {
+    return value
+  }
+  var results = []
+  var styles = String(value).split(';')
+  var style
+  var name
+  var value
+  var index
+  for (var i = 0; i < styles.length; i++) {
+    style = styles[i]
+    index = style.indexOf(';')
+    if (index == -1) {
+      continue
+    }
+    name = style.substr(0, index).toLowerCase().trim()
+    if (!this.options.styles[name]) {
+      continue
+    }
+    value = style.substr(index + 1).toLowerCase().trim()
+    if (value && !/^[^\(\)\[\]'"\:\\]$/.test(value)) {
+      continue
+    }
+    results.push(name + ':' + value)
+  }
+  return results.join(';')
+})
+
 
 
 module.exports = Token

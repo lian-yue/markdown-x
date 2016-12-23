@@ -1,8 +1,8 @@
 {
   "name": "markdown-x",
-  "version": "0.1.1-beta",
-  "description": "",
-  "main": "/dist/node.min.js",
+  "version": "0.1.2-beta",
+  "description": "js, Node.js  Markdown parser",
+  "main": "/dist/token.min.js",
   "scripts": {
     "test": "cross-env NODE_ENV=development mocha \"test/models/*.js\" \"test/models/*/**.js\" --timeout 38000 --compilers js:./test",
     "dev": "cross-env NODE_ENV=development webpack-dev-server --inline --hot --config  webpack.config.js",
