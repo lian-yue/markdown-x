@@ -4,9 +4,9 @@
 	else if(typeof define === 'function' && define.amd)
 		define([], factory);
 	else if(typeof exports === 'object')
-		exports["MarkdownXnode"] = factory();
+		exports["MarkdownXTest"] = factory();
 	else
-		root["MarkdownXnode"] = factory();
+		root["MarkdownXTest"] = factory();
 })(this, function() {
 return /******/ (function(modules) { // webpackBootstrap
 /******/ 	// The module cache

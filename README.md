@@ -82,13 +82,13 @@ console.log(MarkdownXNode.toHtml())
     // 用 node
     var data = '# 解析内容'
     var node = document.querySelector('#text')
-    var token = new MarkdownXtoken(document.querySelector('#text'), document, data)
+    var token = new MarkdownX(document.querySelector('#text'), document, data)
 
 
     // 用 虚拟 node
     var data = '# 解析内容'
-    var node = new MarkdownXnode
-    var token = new MarkdownXtoken(node, MarkdownXnode, data)
+    var node = new MarkdownXNode
+    var token = new MarkdownX(node, MarkdownXNode, data)
     document.querySelector('#text').innerHTML = node.toHtml()
 </script>
 </body>
@@ -101,7 +101,7 @@ console.log(MarkdownXNode.toHtml())
     var options = {
         // ...
     }
-    var token = new MarkdownX(node, MarkdownXnode, data, options)
+    var token = new MarkdownX(node, MarkdownXNode, data, options)
 ```
 
 
@@ -113,20 +113,20 @@ console.log(MarkdownXNode.toHtml())
 ### 添加
 ```js
 var name = '$addvar'
-var option = Token.getRule(name)
+var option = MarkdownX.getRule(name)
 option = {
     match: /\$/,
 }
-Token.addRule(name, option)
+MarkdownX.addRule(name, option)
 ```
 
 
 ### 修改
 ```js
 var name = '$number'
-var option = Token.getRule(name)
+var option = MarkdownX.getRule(name)
 option.match = /(?:\#|＃)/
-Token.addRule(name, option)
+MarkdownX.addRule(name, option)
 ```
 
 
@@ -161,7 +161,7 @@ var option = {
     block： true,
 }
 //  添加修改标签
-Token.addRule(name, option)
+MarkdownX.addRule(name, option)
 
 ```
 
@@ -169,16 +169,16 @@ Token.addRule(name, option)
 ### 修改
 ```js
 var name = 'div2'
-var option = Token.getRule(name)
+var option = MarkdownX.getRule(name)
 option = option || {}
 options.block = true
-Token.addRule(name, option)
+MarkdownX.addRule(name, option)
 ```
 
 ### 删除
 ```js
 var name = 'div2'
-Token.addRule(name, null)
+MarkdownX.addRule(name, null)
 ```
 
 
@@ -188,7 +188,7 @@ Token.addRule(name, null)
 ```js
 // 添加 支持 at
 var name = 'md_at'
-var option = Token.getRule(name)
+var option = MarkdownX.getRule(name)
 option = {
 
     // 使用 $commat 变量
@@ -218,7 +218,7 @@ option = {
       }
     }
 }
-Token.addRule(name, option)
+MarkdownX.addRule(name, option)
 ```
 
 
@@ -227,5 +227,5 @@ Token.addRule(name, option)
 ```js
 // 添加 支持 at
 var name = 'md_at'
-Token.addRule(name, null)
+MarkdownX.addRule(name, null)
 ```

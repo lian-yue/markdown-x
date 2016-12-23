@@ -5,9 +5,6 @@ const Node = require('./node');
 
 (async function() {
 
-
-
-
   var data = await fetch('/README.md')
   data = await data.text()
 

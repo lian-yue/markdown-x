@@ -1,17 +1,15 @@
 var path = require('path')
 var webpack = require('webpack')
 
-module.exports = {
-  entry: {
-    "test": './src/test.js',
-    'node': './src/node.js',
-    'token': './src/token.js',
-  },
 
+var options = {
+  entry: {},
   output: {
     path: './dist',
     publicPath: '/dist/',
     filename: "[name].js",
+    libraryTarget: 'umd',
+    library: 'MarkdownX[name]',
   },
 
 
@@ -54,5 +52,31 @@ module.exports = {
 }
 
 if (process.env.NODE_ENV === 'production') {
-  module.exports.devtool = '#source-map'
+  options.devtool = '#source-map'
 }
+
+
+
+var tokenOption = Object.assign({}, options)
+tokenOption.entry = {
+  token:'./src/token',
+}
+tokenOption.output.library = 'MarkdownX'
+
+var nodeOption = Object.assign({}, options)
+nodeOption.entry = {
+  node:'./src/node'
+}
+nodeOption.output.library = 'MarkdownXNode'
+
+var testOption = Object.assign({}, options)
+testOption.entry = {
+  test:'./src/test'
+}
+testOption.output.library = 'MarkdownXTest'
+
+module.exports = [
+  tokenOption,
+  nodeOption,
+  testOption,
+]
