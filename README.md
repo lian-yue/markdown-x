@@ -8,11 +8,17 @@ MarkdownX  是一个对 html兼容性，扩展性 都很强的 Markdown 解析�
 npm install --save markdown-x
 ```
 
+## git 安装
+```bash
+git clone git@github.com:lian-yue/markdown-x.git
+```
+
 # 如何测试
 ```bash
+npm install
 npm run dev
 ```
- /test.md 是测试  md 文件
+/test.md 是测试  md 文件
 
 # 使用方法
 ## 服务端
