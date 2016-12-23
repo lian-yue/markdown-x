@@ -25,12 +25,16 @@ const Node = require('./node');
   var data = await fetch('/test.md')
   data = await data.text()
 
-  var now = Date.now()
-  var token = new Token(document.querySelector('#test'), document, data)
-
-  console.log('timems: ' + (Date.now() - now))
-
-  console.log(token)
-
+  var textarea = document.querySelector('#textarea')
+  var timems = document.querySelector('#timems')
+  var test = document.querySelector('#test')
+  textarea.value = data
+  textarea.onchange = function() {
+    test.innerHTML = ''
+    var now = Date.now()
+    var token = new Token(test, document, this.value)
+    timems.innerHTML = (Date.now() - now)
+  }
+  textarea.onchange()
 
 })()

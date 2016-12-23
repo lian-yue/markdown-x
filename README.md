@@ -3,6 +3,9 @@
 # MarkdownX 介绍
 MarkdownX  是一个对 html兼容性，扩展性 都很强的 Markdown 解析器 默认自动过滤  危险 html 标签 和 属性
 
+# 演示
+演示地址 <https://lian-yue.github.io/vue-upload-component/> 自定义Markdown代码 地址<https://lian-yue.github.io/vue-upload-component/#textarea>
+
 # 如何安装
 ```bash
 npm install --save markdown-x
