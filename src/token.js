@@ -1698,7 +1698,7 @@ Token.addRule(
 Token.addRule(
   'md_code',
   {
-    match: /(({{$grave}})+)([\s\S]*?(?!\1)[\s\S])\2(?!\1)/,
+    match: /(({{$grave}})+)([\s\S]*?(?!\2)[\s\S])\1(?!\2)/,
     inline: true,
     priority: 20,
     prepare(match) {
