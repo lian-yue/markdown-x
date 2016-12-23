@@ -1403,6 +1403,7 @@ Token.addRule(
     block: true,
     priority: 35,
     prepare(match) {
+      console.log(match)
       var data
       var index
       var char
@@ -1471,6 +1472,7 @@ Token.addRule(
       for (var i = 0; i < datas.length; i++) {
         data = datas[i]
         tr = []
+        text = ''
         while ((index = data.search(regexp)) != -1) {
           char = data.charAt(index)
           if (char == '\\') {

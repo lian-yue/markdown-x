@@ -1427,6 +1427,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	  prepare: function prepare(match) {
 	    var _this2 = this;
 	
+	    console.log(match);
 	    var data;
 	    var index;
 	    var char;
@@ -1493,6 +1494,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	    for (var i = 0; i < datas.length; i++) {
 	      data = datas[i];
 	      tr = [];
+	      text = '';
 	      while ((index = data.search(regexp)) != -1) {
 	        char = data.charAt(index);
 	        if (char == '\\') {
