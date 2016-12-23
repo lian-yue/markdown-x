@@ -199,12 +199,17 @@ return /******/ (function(modules) { // webpackBootstrap
 	  }, {
 	    key: "unescapeHtml",
 	    value: function unescapeHtml(html) {
+	      var htmlEscapes = this.constructor.htmlEscapes;
 	      return html.replace(/&(#(?:\d+)|(?:#x[0-9A-Fa-f]+)|(?:\w+));?/g, function (_, n) {
 	        n = n.toLowerCase();
-	        if (n === 'colon') return ':';
 	        if (n.charAt(0) === '#') {
 	          return n.charAt(1) === 'x' ? String.fromCharCode(parseInt(n.substring(2), 16)) : String.fromCharCode(+n.substring(1));
 	        }
+	        var id = htmlEscapes[n];
+	        if (!id) {
+	          return '';
+	        }
+	        return String.fromCharCode(id);
 	        return '';
 	      });
 	    }
@@ -1032,6 +1037,48 @@ return /******/ (function(modules) { // webpackBootstrap
 	}, (0, _defineProperty3.default)(_Token$rules, "base", null), (0, _defineProperty3.default)(_Token$rules, "html", null), (0, _defineProperty3.default)(_Token$rules, "meta", null), (0, _defineProperty3.default)(_Token$rules, "link", null), (0, _defineProperty3.default)(_Token$rules, "style", { inline: true, block: true, text: true, black: true }), (0, _defineProperty3.default)(_Token$rules, "script", { inline: true, block: true, text: true, black: true }), (0, _defineProperty3.default)(_Token$rules, "head", null), (0, _defineProperty3.default)(_Token$rules, "body", null), (0, _defineProperty3.default)(_Token$rules, "title", null), (0, _defineProperty3.default)(_Token$rules, "noframes", null), (0, _defineProperty3.default)(_Token$rules, "noscript", null), (0, _defineProperty3.default)(_Token$rules, "frameset", null), (0, _defineProperty3.default)(_Token$rules, "frame", null), (0, _defineProperty3.default)(_Token$rules, "iframe", null), (0, _defineProperty3.default)(_Token$rules, "applet", null), (0, _defineProperty3.default)(_Token$rules, "polygon", null), (0, _defineProperty3.default)(_Token$rules, "svg", null), (0, _defineProperty3.default)(_Token$rules, "dialog", null), (0, _defineProperty3.default)(_Token$rules, "command", null), _Token$rules);
 	Token.attributes = {};
 	Token.variables = {};
+	Token.htmlEscapes = {
+	  quot: 34,
+	  apos: 39,
+	  amp: 38,
+	  colon: 58,
+	  lt: 60,
+	  gt: 62,
+	  nbsp: 160,
+	  iexcl: 161,
+	  cent: 162,
+	  pound: 163,
+	  curren: 164,
+	  yen: 165,
+	  brvbar: 166,
+	  sect: 167,
+	  uml: 168,
+	  copy: 169,
+	  ordf: 170,
+	  laquo: 171,
+	  not: 172,
+	  shy: 173,
+	  reg: 174,
+	  macr: 175,
+	  deg: 176,
+	  plusmn: 177,
+	  sup2: 178,
+	  sup3: 179,
+	  acute: 180,
+	  micro: 181,
+	  para: 182,
+	  middot: 183,
+	  cedil: 184,
+	  sup1: 185,
+	  ordm: 186,
+	  raquo: 187,
+	  frac14: 188,
+	  frac12: 189,
+	  frac34: 190,
+	  iquest: 191,
+	  times: 215,
+	  divide: 247
+	};
 	Token.options = {
 	  prefix: '',
 	  protocols: ['http', 'https', 'tel', 'mailto'],
