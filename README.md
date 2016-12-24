@@ -1,5 +1,7 @@
 [TOC]
 
+<b ww="qweqw"  ></b>
+
 # MarkdownX 介绍
 MarkdownX  是一个对 html兼容性，扩展性 都很强的 Markdown 解析器 默认自动过滤  危险 html 标签 和 属性
 
@@ -33,7 +35,8 @@ const MarkdownXNode = require('markdown-x/dist/node');
 var data = '# 解析内容'
 
 var node = new MarkdownXNode
-var token = new MarkdownX(node, MarkdownXNode, data)
+var token = new MarkdownX(data)
+token.toNode(node)
 console.log(node.toHtml())
 ```
 
@@ -47,7 +50,8 @@ const MarkdownX = require('markdown-x');
 var data = '# 解析内容'
 
 var node = new document.createElement('div')
-var token = new MarkdownX(node, document, data)
+var token = new MarkdownX(node)
+tokento
 console.log(node)
 
 
@@ -58,7 +62,9 @@ const MarkdownXNode = require('markdown-x/dist/node');
 var data = '# 解析内容'
 
 var node = new MarkdownXNode
-var token = new MarkdownX(node, MarkdownXNode, data)
+var token = new MarkdownX(node)
+token.toNode(node)
+
 console.log(MarkdownXNode.toHtml())
 ```
 
@@ -82,13 +88,15 @@ console.log(MarkdownXNode.toHtml())
     // 用 node
     var data = '# 解析内容'
     var node = document.querySelector('#text')
-    var token = new MarkdownX(document.querySelector('#text'), document, data)
+    var token = new MarkdownX(data)
+    token.toNode(node)
 
 
     // 用 虚拟 node
     var data = '# 解析内容'
     var node = new MarkdownXNode
-    var token = new MarkdownX(node, MarkdownXNode, data)
+    var token = new MarkdownX(data)
+    token.toNode(node)
     document.querySelector('#text').innerHTML = node.toHtml()
 </script>
 </body>
@@ -101,10 +109,35 @@ console.log(MarkdownXNode.toHtml())
     var options = {
         // ...
     }
-    var token = new MarkdownX(node, MarkdownXNode, data, options)
+    var token = new MarkdownX(data, options)
 ```
 
+# 公共 方法,函数
+```js
+    static MarkdownX.options = {}                  // 解析器 默认 选项
 
+
+    static MarkdownX.getRule(name)                 // 获得 解析规则,变量
+    static MarkdownX.addRule(name, option)         // 添加,修改 解析规则,变量
+    static MarkdownX.addRule(name)                 // 删除 解析规则,变量
+
+
+    static MarkdownX.getAttribute(name)            // 获得 属性解析
+    static MarkdownX.addAttribute(name, cb)        // 添加,修改 属性解析
+    static MarkdownX.addAttribute(name)            // 删除 属性解析
+
+
+    static MarkdownX.getVariable(name)             // 获得 变量解析
+    static MarkdownX.addVariable(name, cb)         // 添加,修改 变量解析
+    static MarkdownX.addVariable(name)             // 删除 变量解析
+
+
+    MarkdownX.options = {}                               // 解析器选项
+    MarkdownX.document = {}                              // 解析得到的对象
+    MarkdownX.toNode(document.createElement('div'))      // 创建 dom 对象
+    MarkdownX.toText(MarkdownX.document, separator?)     // 取得 text 节点
+
+```
 
 # 扩展方法
 

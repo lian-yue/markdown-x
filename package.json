@@ -1,6 +1,6 @@
 {
   "name": "markdown-x",
-  "version": "0.1.2-beta.10",
+  "version": "0.2.0-beta.1",
   "description": "js, Node.js  Markdown parser",
   "main": "dist/token.min.js",
   "scripts": {
@@ -29,10 +29,9 @@
     "babel-preset-es2015": "^6.18.0",
     "babel-preset-stage-0": "^6.16.0",
     "babel-runtime": "^6.18.0",
+    "cross-env": "^3.1.3",
     "webpack": "^1.13.3",
-    "webpack-dev-server": "^1.16.2",
-    "cross-env": "^3.1.3"
+    "webpack-dev-server": "^1.16.2"
   },
-  "dependencies": {
-  }
+  "dependencies": {}
 }

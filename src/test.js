@@ -10,12 +10,9 @@ const Node = require('./node');
 
   var now = Date.now()
   var node = new Node
-  var token = new Token(node, Node, data)
-
-  document.querySelector('#rename').innerHTML = node.toHtml()
-
+  var token = new Token(data)
+  token.toNode(document.querySelector('#rename'))
   console.log('timems: ' + (Date.now() - now))
-
 
 
 
@@ -27,11 +24,11 @@ const Node = require('./node');
   var test = document.querySelector('#test')
   textarea.value = data
   textarea.onchange = function() {
-    test.innerHTML = ''
     var now = Date.now()
-    var token = new Token(test, document, this.value)
+    var token = new Token(this.value)
+    test.innerHTML = ''
+    token.toNode(test)
     timems.innerHTML = (Date.now() - now)
   }
   textarea.onchange()
-
 })()

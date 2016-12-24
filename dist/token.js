@@ -163,14 +163,19 @@ return /******/ (function(modules) { // webpackBootstrap
 	
 	  }]);
 	
-	  function Token(parentNode, document, data, options) {
+	  function Token(data, options) {
 	    (0, _classCallCheck3.default)(this, Token);
 	    this.rules = {};
 	    this._regexp = {};
 	    this.variables = {};
 	    this.dataStack = [];
+	    this.document = {
+	      nodeName: '#document',
+	      children: []
+	    };
 	    this.parentNodeStack = [];
 	    this.parentNameStack = [];
+	    this.parentNode = this.document;
 	    this.blockStack = [];
 	    this.block = true;
 	    this.blackListStack = [];
@@ -183,8 +188,6 @@ return /******/ (function(modules) { // webpackBootstrap
 	    this.baseBlackListStack = [];
 	    this.baseBlackList = {};
 	
-	    this.parentNode = parentNode;
-	    this.document = document;
 	    this.options = (0, _assign2.default)({}, this.constructor.options, options || {});
 	    this.parserRules();
 	    this.prepare(data);
@@ -395,91 +398,100 @@ return /******/ (function(modules) { // webpackBootstrap
 	    }
 	  }, {
 	    key: "push",
-	    value: function push(value, pop) {
-	      var option = value.nodeName.charAt(0) == '#' ? false : this.rules[value.nodeName];
-	      if (value.nodeHtml && (!option || !option.html || option.black || this.parentNodeStack.length >= NESTING)) {
+	    value: function push(node, pop) {
+	      var option = node.nodeName.charAt(0) == '#' ? false : this.rules[node.nodeName];
+	      if (node.nodeHtml && (!option || !option.html || option.black || this.parentNodeStack.length >= NESTING)) {
 	        return false;
 	      }
 	
-	      var node = this.createNode(value);
-	      this.parentNode.appendChild(node);
+	      this.parentNode.children.push(node);
 	
-	      if (value.varName && value.varName.length) {
-	        if (value.varName.length == 1) {
-	          this.variables[value.varName[0]] = this.variables[value.varName[0]] || [];
-	          this.variables[value.varName[0]].push(node);
+	      if (node.varName && node.varName.length) {
+	        if (node.varName.length == 1) {
+	          this.variables[node.varName[0]] = this.variables[node.varName[0]] || [];
+	          this.variables[node.varName[0]].push(node);
 	        } else {
-	          this.variables[value.varName[0]] = this.variables[value.varName[0]] || {};
-	          this.variables[value.varName[0]][value.varName[1]] = node;
+	          this.variables[node.varName[0]] = this.variables[node.varName[0]] || {};
+	          this.variables[node.varName[0]][node.varName[1]] = node;
 	        }
 	      }
 	
-	      if (option && !option.single) {
-	        var parentNode = this.parentNode;
-	        // 父级
-	        this.parentNodeStack.push(this.parentNode);
-	        this.parentNode = node;
-	
-	        // 父级名称
-	        this.parentNameStack.push(this.parentName);
-	        this.parentName = value.nodeName;
-	
-	        // 块标签
-	        this.blockStack.push(this.block);
-	        if (this.block && (option.blackBlock || option.inline && !option.block)) {
-	          this.block = false;
+	      if (option) {
+	        if (node.attributes) {
+	          var attributes = node.attributes;
+	          this.setAttributes(node, attributes);
+	        } else {
+	          node.attributes = {};
 	        }
 	
-	        // 黑名单
-	        this.blackListStack.push(this.blackList);
-	        if (option.blackList) {
-	          this.blackList = (0, _assign2.default)({}, this.blackList, option.blackList);
-	        }
-	
-	        // 白名单
-	        this.whiteListStack.push(this.whiteList);
-	        if (option.whiteList) {
-	          if (this.whiteList) {
-	            var whiteList = this.whiteList;
-	            this.whiteList = (0, _assign2.default)({}, option.whiteList);
-	            for (var key in this.whiteList) {
-	              if (!whiteList[key]) {
-	                delete this.whiteList[key];
-	              }
-	            }
-	          } else {
-	            this.whiteList = option.whiteList;
-	          }
-	        }
-	
-	        // 基础
-	        if (!value.nodeHtml) {
+	        if (!option.single) {
+	          var parentNode = this.parentNode;
 	          // 父级
-	          this.baseParentNodeStack.push(this.baseParentNode);
-	          this.baseParentNode = node;
+	          this.parentNodeStack.push(this.parentNode);
+	          this.parentNode = node;
 	
-	          // 快标签
-	          this.baseBlockStack.push(this.baseBlock);
-	          this.baseBlock = this.block;
+	          // 父级名称
+	          this.parentNameStack.push(this.parentName);
+	          this.parentName = node.nodeName;
+	
+	          // 块标签
+	          this.blockStack.push(this.block);
+	          if (this.block && (option.blackBlock || option.inline && !option.block)) {
+	            this.block = false;
+	          }
 	
 	          // 黑名单
-	          this.baseBlackListStack.push(this.baseBlackList);
-	          this.baseBlackList = this.blackList;
-	        }
-	
-	        // 处理子数据
-	        this.parentNode;
-	        if (value.children && value.children.length) {
-	          if ((0, _typeof3.default)(value.children) == 'object' && (0, _typeof3.default)(value.children[0]) == 'object') {
-	            for (var i = 0; i < value.children.length; i++) {
-	              this.push(value.children[i], pop);
-	            }
-	          } else {
-	            this.prepare(value.children, value.block);
+	          this.blackListStack.push(this.blackList);
+	          if (option.blackList) {
+	            this.blackList = (0, _assign2.default)({}, this.blackList, option.blackList);
 	          }
-	        }
-	        if (pop && parentNode != this.parentNode) {
-	          this.pop();
+	
+	          // 白名单
+	          this.whiteListStack.push(this.whiteList);
+	          if (option.whiteList) {
+	            if (this.whiteList) {
+	              var whiteList = this.whiteList;
+	              this.whiteList = (0, _assign2.default)({}, option.whiteList);
+	              for (var key in this.whiteList) {
+	                if (!whiteList[key]) {
+	                  delete this.whiteList[key];
+	                }
+	              }
+	            } else {
+	              this.whiteList = option.whiteList;
+	            }
+	          }
+	
+	          // 基础
+	          if (!node.nodeHtml) {
+	            // 父级
+	            this.baseParentNodeStack.push(this.baseParentNode);
+	            this.baseParentNode = node;
+	
+	            // 快标签
+	            this.baseBlockStack.push(this.baseBlock);
+	            this.baseBlock = this.block;
+	
+	            // 黑名单
+	            this.baseBlackListStack.push(this.baseBlackList);
+	            this.baseBlackList = this.blackList;
+	          }
+	
+	          // 处理子数据
+	          var children = node.children;
+	          node.children = [];
+	          if (children && children.length) {
+	            if ((typeof children === "undefined" ? "undefined" : (0, _typeof3.default)(children)) == 'object' && (0, _typeof3.default)(children[0]) == 'object') {
+	              for (var i = 0; i < children.length; i++) {
+	                this.push(children[i], pop);
+	              }
+	            } else {
+	              this.prepare(children, node.block);
+	            }
+	          }
+	          if (pop && parentNode != this.parentNode) {
+	            this.pop();
+	          }
 	        }
 	      }
 	
@@ -563,7 +575,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	    }
 	  }, {
 	    key: "setAttributes",
-	    value: function setAttributes(node, attributes, nodeHtml) {
+	    value: function setAttributes(node, attributes) {
 	      var value;
 	      for (var name in attributes) {
 	        value = attributes[name];
@@ -571,47 +583,60 @@ return /******/ (function(modules) { // webpackBootstrap
 	          continue;
 	        }
 	        if (this.constructor.attributes[name]) {
-	          value = this.constructor.attributes[name].call(this, value, nodeHtml, node, name);
-	        } else if (nodeHtml) {
+	          value = this.constructor.attributes[name].call(this, value, node, name);
+	        } else if (node.nodeHtml) {
 	          continue;
 	        }
 	        if (value === false || value === null || value === undefined) {
 	          continue;
 	        }
-	        node.setAttribute(name, value);
+	        node.attributes[name] = value;
 	      }
 	    }
 	  }, {
 	    key: "toText",
-	    value: function toText(node, join) {
+	    value: function toText(node, separator) {
 	      var text = [];
 	      var child;
 	      var result;
-	      for (var i = 0; i < node.childNodes.length; i++) {
-	        child = node.childNodes[i];
-	        if (child.nodeType == this.document.TEXT_NODE) {
+	      for (var i = 0; i < node.children.length; i++) {
+	        child = node.children[i];
+	        if (child.nodeName == '#text') {
 	          text.push(child.nodeValue);
-	        } else if (child.nodeType == this.document.ELEMENT_NODE) {
-	          result = this.toText(child, join);
+	        } else if (child.nodeName == '#document' || child.nodeName.charAt(0) != '#') {
+	          result = this.toText(child, separator);
 	          if (result) {
 	            text.push(result);
 	          }
 	        }
 	      }
-	      return text.join(join || '');
+	      return text.join(separator || '');
 	    }
 	  }, {
-	    key: "createNode",
-	    value: function createNode(value) {
-	      var node;
-	      if (value.nodeName == '#text') {
-	        node = this.document.createTextNode(this.unescapeHtml(value.nodeValue) || '');
-	      } else if (value.nodeName == '#comment') {
-	        node = this.document.createComment(value.nodeValue || '');
-	      } else {
-	        node = this.document.createElement(value.nodeName || '');
-	        if (value.attributes) {
-	          this.setAttributes(node, value.attributes, value.nodeHtml);
+	    key: "toNode",
+	    value: function toNode(node) {
+	      var child;
+	      var node2;
+	      var Node = node.constructor.createElement ? node.constructor : document;
+	      var name;
+	      for (var i = 0; i < this.parentNode.children.length; i++) {
+	        child = this.parentNode.children[i];
+	        if (child.nodeName == '#text') {
+	          node.appendChild(Node.createTextNode(this.unescapeHtml(child.nodeValue)));
+	        } else if (child.nodeName == '#comment') {
+	          node.appendChild(Node.createComment(child.nodeValue));
+	        } else {
+	          node2 = Node.createElement(child.nodeName);
+	          node.appendChild(node2);
+	          for (name in child.attributes) {
+	            node2.setAttribute(name, child.attributes[name]);
+	          }
+	          if (child.children && child.children.length) {
+	            this.parentNodeStack.push(this.parentNode);
+	            this.parentNode = child;
+	            this.toNode(node2);
+	            this.parentNode = this.parentNodeStack.pop();
+	          }
 	        }
 	      }
 	      return node;
@@ -862,7 +887,9 @@ return /******/ (function(modules) { // webpackBootstrap
 	          }
 	        }
 	        attributeName = attributeName.trim().toLowerCase();
-	        attributes[attributeName] = attributeValue;
+	        if (attributeName) {
+	          attributes[attributeName] = attributeValue;
+	        }
 	      }
 	      return attributes;
 	    }
@@ -1389,34 +1416,59 @@ return /******/ (function(modules) { // webpackBootstrap
 	    list.push(li);
 	    blocktexts.push(blocktexts.length ? blocktexts[blocktexts.length - 1] : false);
 	
-	    var li;
-	    var p;
+	    var children = [];
+	    for (var i = 0; i < list.length; i++) {
+	      children.push({
+	        nodeName: 'li',
+	        children: list[i]
+	      });
+	    }
+	
+	    var node = {
+	      nodeName: match[2] ? 'ol' : 'ul',
+	      children: children
+	    };
+	    this.push(node, true);
+	
+	    var liNode;
+	    var pNode;
 	    var checkbox;
 	    var checkboxNode;
-	    this.push({ nodeName: match[2] ? 'ol' : 'ul' });
-	    for (var i = 0; i < list.length; i++) {
-	      li = this.push({ nodeName: 'li', children: list[i] }, true);
-	      if (!blocktexts[i] && (p = li.childNodes[0]) && p.nodeName.toLowerCase() == 'p') {
-	        while (p.childNodes.length) {
-	          li.insertBefore(p.childNodes[0], p);
+	    for (var i = 0; i < node.children.length; i++) {
+	      liNode = node.children[i];
+	      if (!blocktexts[i] && (pNode = liNode.children[0]) && pNode.nodeName == 'p') {
+	        // 删除第一个
+	        liNode.children.splice(0, 1);
+	
+	        // 合并
+	        liNode.children = pNode.children.concat(liNode.children);
+	      }
+	
+	      checkbox = checkboxs[i];
+	      if (checkbox) {
+	        this.setAttributes(liNode, { class: 'task-list-item' });
+	        if (!node.attributes.class) {
+	          this.setAttributes(node, { class: 'task-list' });
 	        }
-	        li.removeChild(p);
-	        checkbox = checkboxs[i];
-	        if (checkbox) {
-	          checkboxNode = this.createNode({ nodeName: 'input', attributes: { type: 'checkbox', class: 'task-list-item-checkbox', disabled: true, checked: checkbox.toLowerCase() == 'x' } });
-	          if (li.childNodes.length) {
-	            li.insertBefore(checkboxNode, li.childNodes[0]);
-	          } else {
-	            li.appendChild(checkboxNode);
-	          }
-	          this.setAttributes(li, { class: 'task-list-item' });
-	          if (!li.parentNode.getAttribute('class')) {
-	            this.setAttributes(li.parentNode, { class: 'task-list' });
-	          }
+	
+	        checkboxNode = {
+	          nodeName: 'input',
+	          attributes: {},
+	          children: []
+	        };
+	        this.setAttributes(checkboxNode, {
+	          type: 'checkbox',
+	          class: 'task-list-item-checkbox',
+	          disabled: true,
+	          checked: checkbox.toLowerCase() == 'x'
+	        });
+	        if (!liNode.children.length || liNode.children[0].nodeName != 'p') {
+	          liNode.children.splice(0, 0, checkboxNode);
+	        } else {
+	          liNode.children[0].children.splice(0, 0, checkboxNode);
 	        }
 	      }
 	    }
-	    this.pop();
 	  }
 	});
 	
@@ -1427,7 +1479,6 @@ return /******/ (function(modules) { // webpackBootstrap
 	  prepare: function prepare(match) {
 	    var _this2 = this;
 	
-	    console.log(match);
 	    var data;
 	    var index;
 	    var char;
@@ -1609,18 +1660,34 @@ return /******/ (function(modules) { // webpackBootstrap
 	      }
 	    }
 	    var id = this.escapeId(match[1]);
-	    return {
+	
+	    this.refnoteId = this.refnoteId || 0;
+	    this.refnoteId++;
+	
+	    var node = {
 	      nodeName: 'li',
 	      block: false,
+	      refnoteId: this.refnoteId,
 	      varName: ['footnote', match[1].toLowerCase()],
 	      attributes: {
 	        class: 'footnote',
 	        id: this.options.prefix + 'footnote-' + id,
-	        'data-href': '#' + this.options.prefix + 'refnote-' + id,
 	        style: 'display:none'
 	      },
 	      children: children
 	    };
+	    this.push(node, true);
+	    node.children.push({
+	      nodeName: 'a',
+	      attributes: {
+	        href: '#' + this.options.prefix + 'refnote-' + id,
+	        title: this.options.toRefnote || 'Return to article'
+	      },
+	      children: [{
+	        nodeName: '#text',
+	        nodeValue: '↩'
+	      }]
+	    });
 	  }
 	});
 	
@@ -1733,12 +1800,12 @@ return /******/ (function(modules) { // webpackBootstrap
 	  prepare: function prepare(match) {
 	    return {
 	      nodeName: 'img',
+	      nodeValue: match[0],
 	      varName: typeof match[4] == 'string' ? ['image', match[4].toLowerCase()] : null,
 	      attributes: {
 	        alt: match[1],
 	        src: match[2],
-	        title: match[3],
-	        'data-value': typeof match[4] == 'string' ? match[0] : null
+	        title: match[3]
 	      }
 	    };
 	  }
@@ -1751,6 +1818,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	  prepare: function prepare(match) {
 	    return {
 	      nodeName: 'a',
+	      nodeValue: match[0],
 	      varName: typeof match[4] == 'string' ? ['link', match[4].toLowerCase()] : null,
 	      attributes: {
 	        href: match[2],
@@ -1805,13 +1873,13 @@ return /******/ (function(modules) { // webpackBootstrap
 	    var id = this.escapeId(match[1]);
 	    return {
 	      nodeName: 'a',
+	      nodeValue: match[0],
 	      varName: ['refnote', match[1].toLowerCase()],
 	      attributes: {
 	        class: 'refnote',
 	        id: this.options.prefix + 'refnote-' + id,
 	        href: '#' + this.options.prefix + 'footnote-' + id,
-	        title: this.options.toFootnote || 'See footnote',
-	        'data-value': match[0]
+	        title: this.options.toFootnote || 'See footnote'
 	      },
 	      children: [{
 	        nodeName: '#text',
@@ -1834,11 +1902,9 @@ return /******/ (function(modules) { // webpackBootstrap
 	
 	Token.addVariable('image', function (varName, node) {
 	  if (!this.variables.reflink || !this.variables.reflink[varName]) {
-	    node.parentNode.insertBefore(this.createNode({ nodeName: '#text', nodeValue: node.getAttribute('data-value') || '' }), node);
-	    node.parentNode.removeChild(node);
+	    node.nodeName = '#text';
 	    return;
 	  }
-	  node.removeAttribute('data-value');
 	  var reflink = this.variables.reflink[varName];
 	  this.setAttributes(node, {
 	    src: reflink.uri,
@@ -1848,10 +1914,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	
 	Token.addVariable('link', function (varName, node) {
 	  if (!this.variables.reflink || !this.variables.reflink[varName]) {
-	    while (node.childNodes.length) {
-	      node.parentNode.insertBefore(node.childNodes[0], node);
-	    }
-	    node.parentNode.removeChild(node);
+	    node.nodeName = '#text';
 	    return;
 	  }
 	  var reflink = this.variables.reflink[varName];
@@ -1863,74 +1926,79 @@ return /******/ (function(modules) { // webpackBootstrap
 	
 	Token.addVariable('refnote', function (varName, node) {
 	  if (!this.variables.footnote || !this.variables.footnote[varName]) {
-	    if (node.childNodes.length) {
-	      node.parentNode.insertBefore(this.createNode({ nodeName: '#text', nodeValue: node.getAttribute('data-value') }), node);
-	    }
-	    node.parentNode.removeChild(node);
+	    node.nodeName = '#text';
 	    return;
 	  }
-	
-	  node.removeAttribute('data-value');
-	  this.refnoteId = this.refnoteId || 0;
-	  this.refnoteId++;
-	
-	  while (node.childNodes.length) {
-	    node.removeChild(node.childNodes[0]);
-	  }
-	  node.appendChild(this.createNode({ nodeName: '#text', nodeValue: '[' + this.refnoteId + ']' }));
+	  node.children = [{
+	    nodeName: '#text',
+	    nodeValue: '[' + this.variables.footnote[varName].refnoteId + ']'
+	  }];
 	});
 	
 	Token.addVariable('footnote', function (varName, node) {
-	  this.footnoteId = this.footnoteId || 0;
-	  this.footnoteId++;
-	  var parentNode = node.parentNode;
+	  this.document.children.splice(this.document.children.indexOf(node), 1);
 	
 	  if (!this.footnoteNode) {
-	    this.footnoteNode = this.createNode({ nodeName: 'ol', attributes: { class: 'footnotes' } });
-	    parentNode.appendChild(this.footnoteNode);
+	    this.footnoteNode = {
+	      nodeName: 'ol',
+	      attributes: {},
+	      children: []
+	    };
+	    this.setAttributes(this.footnoteNode, { class: 'footnotes' });
+	    this.document.children.push(this.footnoteNode);
 	  }
-	  var href = node.getAttribute('data-href');
-	  var a = this.createNode({ nodeName: 'a', attributes: { class: 'to-refnote', href: href } });
-	  node.removeAttribute('style');
-	  node.removeAttribute('data-href');
-	  a.appendChild(this.createNode({ nodeName: '#text', title: this.options.toRefnote || 'Return to article', nodeValue: '↩' }));
-	  node.appendChild(a);
-	  this.footnoteNode.appendChild(node);
+	
+	  this.footnoteNode.children.push(node);
 	});
 	
 	Token.addVariable('toc', function (varName, node) {
-	  var parentNode = node.parentNode;
+	  var ulStack = [];
 	  var ul = node;
-	  var li;
+	  var ul2;
 	  var a;
 	  var child;
 	  var level;
 	  var level2;
-	  for (var i = 0; i < parentNode.childNodes.length; i++) {
-	    child = parentNode.childNodes[i];
-	    if (!child.nodeName || child.nodeName.length != 2 || !(level2 = child.nodeName.charAt(1)) || level2 < '1' || level2 > '6' || !child.getAttribute('id')) {
+	  var index;
+	  for (var i = 0; i < this.document.children.length; i++) {
+	    child = this.document.children[i];
+	    if (child.nodeHtml || (level2 = ['h1', 'h2', 'h3', 'h4', 'h5', 'h6'].indexOf(child.nodeName)) == -1 || !child.attributes.id) {
 	      continue;
 	    }
-	    level2 = parseInt(level2);
-	
+	    level2++;
 	    if (level) {
 	      if (level2 > level) {
-	        ul = ul.appendChild(this.createNode({ nodeName: 'ul' }));
+	        ul2 = {
+	          nodeName: 'ul',
+	          attributes: {},
+	          children: []
+	        };
+	        ulStack.push(ul);
+	        ul.children[ul.children.length - 1].children.push(ul2);
+	        ul = ul2;
 	      } else if (level2 < level && ul != node) {
 	        while (level2 < level && ul != node) {
 	          level--;
-	          ul = ul.parentNode;
+	          ul = ulStack.pop();
 	        }
 	      }
 	    }
 	    level = level2;
-	    li = this.createNode({ nodeName: 'li' });
-	    a = this.createNode({ nodeName: 'a' });
-	    this.setAttributes(a, { href: '#' + child.getAttribute('id') });
+	    a = {
+	      nodeName: 'a',
+	      attributes: {},
+	      children: [{
+	        nodeName: '#text',
+	        nodeValue: this.toText(child)
+	      }]
+	    };
+	    this.setAttributes(a, { href: '#' + child.attributes.id });
 	
-	    a.appendChild(this.createNode({ nodeName: '#text', nodeValue: this.toText(child) }));
-	    li.appendChild(a);
-	    ul.appendChild(li);
+	    ul.children.push({
+	      nodeName: 'li',
+	      attributes: {},
+	      children: [a]
+	    });
 	  }
 	});
 	
