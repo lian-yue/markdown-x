@@ -2210,7 +2210,7 @@ Token.addVariable('toc', function(varName, node) {
 
 Token.addAttribute('href', function (value) {
   value = String(value)
-  if (value.substr(0, 2) == '//') {
+  if (!value || ['/', '#', '?'].indexOf(value.charAt(0)) != -1) {
     return value
   }
   try {
@@ -2227,7 +2227,7 @@ Token.addAttribute('href', function (value) {
 
 Token.addAttribute('src', function (value) {
   value = String(value)
-  if (value.substr(0, 2) == '//') {
+  if (!value || ['/', '#', '?'].indexOf(value.charAt(0)) != -1) {
     return value
   }
   try {

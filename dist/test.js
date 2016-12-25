@@ -4593,7 +4593,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	
 	Token.addAttribute('href', function (value) {
 	  value = String(value);
-	  if (value.substr(0, 2) == '//') {
+	  if (!value || ['/', '#', '?'].indexOf(value.charAt(0)) != -1) {
 	    return value;
 	  }
 	  try {
@@ -4610,7 +4610,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	
 	Token.addAttribute('src', function (value) {
 	  value = String(value);
-	  if (value.substr(0, 2) == '//') {
+	  if (!value || ['/', '#', '?'].indexOf(value.charAt(0)) != -1) {
 	    return value;
 	  }
 	  try {
