@@ -3080,7 +3080,10 @@ return /******/ (function(modules) { // webpackBootstrap
 	    }
 	  }, {
 	    key: "toText",
-	    value: function toText(node, separator) {
+	    value: function toText(separator, node) {
+	      if (!node) {
+	        node = this.parentName;
+	      }
 	      var text = [];
 	      var child;
 	      var result;
@@ -3089,7 +3092,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	        if (child.nodeName == '#text') {
 	          text.push(child.nodeValue);
 	        } else if (child.nodeName == '#document' || child.nodeName.charAt(0) != '#') {
-	          result = this.toText(child, separator);
+	          result = this.toText(separator, child);
 	          if (result) {
 	            text.push(result);
 	          }

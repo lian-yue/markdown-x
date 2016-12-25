@@ -133,7 +133,7 @@ console.log(MarkdownXNode.toHtml())
     MarkdownX.options = {}                               // 解析器选项
     MarkdownX.document = {}                              // 解析得到的对象
     MarkdownX.toNode(document.createElement('div'))      // 创建 dom 对象
-    MarkdownX.toText(MarkdownX.document, separator?)     // 取得 text 节点
+    MarkdownX.toText(separator?)     // 取得 text 节点
 
 ```
 
