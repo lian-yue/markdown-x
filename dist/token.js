@@ -429,7 +429,9 @@ return /******/ (function(modules) { // webpackBootstrap
 	          node.attributes = {};
 	        }
 	
-	        if (!option.single) {
+	        if (option.single) {
+	          node.children = [];
+	        } else {
 	          var parentNode = this.parentNode;
 	          // 父级
 	          this.parentNodeStack.push(this.parentNode);
