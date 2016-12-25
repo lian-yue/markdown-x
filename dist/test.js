@@ -4593,6 +4593,9 @@ return /******/ (function(modules) { // webpackBootstrap
 	
 	Token.addAttribute('href', function (value) {
 	  value = String(value);
+	  if (value.substr(0, 2) == '//') {
+	    return value;
+	  }
 	  try {
 	    var prot = decodeURIComponent(this.unescapeHtml(value)).replace(/[^\w:]/g, '').toLowerCase();
 	  } catch (e) {
@@ -4607,6 +4610,9 @@ return /******/ (function(modules) { // webpackBootstrap
 	
 	Token.addAttribute('src', function (value) {
 	  value = String(value);
+	  if (value.substr(0, 2) == '//') {
+	    return value;
+	  }
 	  try {
 	    var prot = decodeURIComponent(this.unescapeHtml(value)).replace(/[^\w:]/g, '').toLowerCase();
 	  } catch (e) {
