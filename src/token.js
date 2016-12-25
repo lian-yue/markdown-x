@@ -14,6 +14,11 @@ const TAG_NAME = /[ \t\r\n\0\x0B\u00a0\/>]/
 const TAG_END = /[ \t\r\n\0\x0B\u00a0>]/
 
 
+const DIFF_ADD = 1
+const DIFF_DELETE = 2
+const DIFF_REPLACE = 3
+
+
 
 class Token {
 
@@ -564,6 +569,7 @@ class Token {
     if (option) {
       if (node.attributes) {
         var attributes = node.attributes
+        node.attributes = {}
         this.setAttributes(node, attributes)
       } else {
         node.attributes = {}
@@ -762,31 +768,140 @@ class Token {
 
   toNode(node) {
     var child
-    var node2
+    var childNode
     var Node = node.constructor.createElement ? node.constructor : document
     var name
-    for (var i = 0; i < this.parentNode.children.length; i++) {
-      child = this.parentNode.children[i]
-      if (child.nodeName =='#text') {
-        node.appendChild(Node.createTextNode(this.unescapeHtml(child.nodeValue)))
-      } else if (child.nodeName =='#comment') {
-        node.appendChild(Node.createComment(child.nodeValue))
+    var value
+
+
+    // 解析已存在的 key
+    var diffKeys = {}
+    var nodeChildren = {}
+    var markdownx
+    var attributes
+    for (var i = 0; i < node.childNodes.length; i++) {
+      childNode = node.childNodes[i]
+      if (!diffKeys[childNode.nodeName]) {
+        diffKeys[childNode.nodeName] = 1
       } else {
-        node2 = Node.createElement(child.nodeName)
-        node.appendChild(node2)
-        for (name in child.attributes) {
-          node2.setAttribute(name, child.attributes[name])
+        diffKeys[childNode.nodeName]++
+      }
+
+      if (!childNode._markdownx) {
+        if (childNode.attributes && typeof childNode.attributes.item == 'function') {
+          attributes = {}
+          for (let i = 0; i < childNode.attributes.length; i++) {
+            attributes[childNode.attributes[i].name] = childNode.attributes[i].value
+          }
+        } else {
+          attributes = childNode.attributes
         }
-        if (child.children && child.children.length) {
-          this.parentNodeStack.push(this.parentNode)
-          this.parentNode = child
-          this.toNode(node2)
-          this.parentNode = this.parentNodeStack.pop()
+        childNode._markdownx = {
+          nodeName: childNode.nodeName.toLowerCase(),
+          nodeValue: childNode.nodeValue,
+          attributes,
         }
       }
+      nodeChildren[childNode._markdownx.nodeName + ',' + diffKeys[childNode.nodeName]] = childNode
     }
+
+
+
+
+
+    //  diff 算法
+    var diffKeys = {}
+    var diffKey
+    var nodeValue
+    for (var i = 0; i < this.parentNode.children.length; i++) {
+      child = this.parentNode.children[i]
+      if (!diffKeys[child.nodeName]) {
+        diffKeys[child.nodeName] = 1
+      } else {
+        diffKeys[child.nodeName]++
+      }
+      diffKey = child.nodeName + ',' + diffKeys[child.nodeName]
+
+
+      if (!nodeChildren[diffKey]) {
+        // 创建
+        if (child.nodeName =='#text') {
+          childNode = Node.createTextNode(this.unescapeHtml(child.nodeValue))
+        } else if (child.nodeName =='#comment') {
+          childNode = Node.createComment(child.nodeValue)
+        } else {
+          childNode = Node.createElement(child.nodeName)
+          for (name in child.attributes) {
+            childNode.setAttribute(name, child.attributes[name])
+          }
+        }
+      } else {
+        childNode = nodeChildren[diffKey]
+
+        // 已处理的数据要删除
+        delete nodeChildren[diffKey]
+
+        // diff 算法
+        if (childNode.nodeName == '#text') {
+          nodeValue = this.unescapeHtml(child.nodeValue)
+          if (nodeValue != childNode.nodeValue) {
+            childNode.nodeValue = nodeValue
+          }
+        } else if (childNode.nodeName == '#comment') {
+          if (child.nodeValue != childNode.nodeValue) {
+            childNode.nodeValue = nodeValue
+          }
+        } else {
+          // 删除
+          for (name in childNode._markdownx.attributes) {
+            if (child.attributes[name] == undefined) {
+              childNode.removeAttribute(name)
+            }
+          }
+          // 修改 或者添加
+          for (name in child.attributes) {
+            // 添加
+            value = child.attributes[name]
+            if (value === true) {
+              value = ''
+            }
+            if (childNode._markdownx.attributes[name] != value) {
+              childNode.setAttribute(name, value)
+            }
+          }
+        }
+      }
+
+      // 不相同
+      if (childNode != node.childNodes[i]) {
+        if (node.childNodes[i]) {
+          node.insertBefore(childNode, node.childNodes[i])
+        } else {
+          node.appendChild(childNode)
+        }
+      }
+
+      // 解析子数据
+      if (child.children && child.children.length && child.nodeName.charAt(0) != '#') {
+        this.parentNodeStack.push(this.parentNode)
+        this.parentNode = child
+        this.toNode(childNode)
+        this.parentNode = this.parentNodeStack.pop()
+      }
+
+      // 设置 _markdownx
+      childNode._markdownx = child
+    }
+
+    // 删除未使用的节点
+    for (var key in nodeChildren) {
+      node.removeChild(nodeChildren[key])
+    }
+
+
     return node
   }
+
 
   pushData(after, block) {
     var lines

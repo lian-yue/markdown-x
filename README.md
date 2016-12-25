@@ -1,7 +1,5 @@
 [TOC]
 
-<b ww="qweqw"  ></b>
-
 # MarkdownX 介绍
 MarkdownX  是一个对 html兼容性，扩展性 都很强的 Markdown 解析器 默认自动过滤  危险 html 标签 和 属性
 
@@ -146,8 +144,7 @@ console.log(MarkdownXNode.toHtml())
 ### 添加
 ```js
 var name = '$addvar'
-var option = MarkdownX.getRule(name)
-option = {
+var option = {
     match: /\$/,
 }
 MarkdownX.addRule(name, option)

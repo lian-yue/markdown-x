@@ -26,7 +26,6 @@ const Node = require('./node');
   textarea.onchange = function() {
     var now = Date.now()
     var token = new Token(this.value)
-    test.innerHTML = ''
     token.toNode(test)
     timems.innerHTML = (Date.now() - now)
   }
