@@ -3082,7 +3082,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	    key: "toText",
 	    value: function toText(separator, node) {
 	      if (!node) {
-	        node = this.parentName;
+	        node = this.parentNode;
 	      }
 	      var text = [];
 	      var child;
@@ -4578,7 +4578,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	      attributes: {},
 	      children: [{
 	        nodeName: '#text',
-	        nodeValue: this.toText(child)
+	        nodeValue: this.toText('', child)
 	      }]
 	    };
 	    this.setAttributes(a, { href: '#' + child.attributes.id });

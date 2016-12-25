@@ -750,7 +750,7 @@ class Token {
 
   toText(separator, node) {
     if (!node) {
-      node = this.parentName
+      node = this.parentNode
     }
     var text = []
     var child
@@ -2191,7 +2191,7 @@ Token.addVariable('toc', function(varName, node) {
       children: [
         {
           nodeName: '#text',
-          nodeValue: this.toText(child),
+          nodeValue: this.toText('', child),
         }
       ],
     }
