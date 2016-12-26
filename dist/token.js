@@ -1259,6 +1259,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	Token.addRule('$bsol', { match: /\\/ });
 	Token.addRule('$commat', { match: /\@/ });
 	Token.addRule('$dollar', { match: /\$/ });
+	Token.addRule('$excl', { match: /\!/ });
 	Token.addRule('$apos', { match: /'/ });
 	Token.addRule('$quot', { match: /"/ });
 	Token.addRule('$lbrack', { match: /\[/ });
@@ -1918,7 +1919,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	});
 	
 	Token.addRule('md_image', {
-	  match: /\!{{$link_image}}/,
+	  match: /{{$excl}}{{$link_image}}/,
 	  inline: true,
 	  priority: 45,
 	  prepare: function prepare(match) {
