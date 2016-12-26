@@ -269,9 +269,12 @@ MarkdownX.addRule(name, null)
 MarkdownX.addRule('$space', {match: /[ \u00a0\u3000]/})
 
 // 修改 增加需要转译的 字符
-MarkdownX.addRule('$escape', {match: /[{}\[\]()<>'+\-\\`*:#!_~@$'.｀～＞＜＃＊ー＝＋：＿｜。．＠＄’”［］（）]/})
+MarkdownX.addRule('$escape', {match: /[{}\[\]()<>'+\-\\`*:#!_~@$'.｀～＞＜＃＊ー＝＋：＿｜。．＠＄’”［］（）＼]/})
 
 // 添加各种全角属性
+MarkdownX.addRule('$space', {match: /[ \u00a0\u3000]/})
+
+
 MarkdownX.addRule('$grave', {match: /[`｀]/})
 MarkdownX.addRule('$tilde', {match: /[~～]/})
 MarkdownX.addRule('$gt', {match: /[>＞]/})
@@ -288,10 +291,11 @@ MarkdownX.addRule('$doc', {match: /[.。．]/})
 MarkdownX.addRule('$bsol', {match: /\\/})
 MarkdownX.addRule('$commat', {match: /[@＠]/})
 MarkdownX.addRule('$dollar', {match: /[$＄]/})
+MarkdownX.addRule('$bsol', {match: /[\\＼]/})
+MarkdownX.addRule('$excl', {match: /[!！]/})
 MarkdownX.addRule('$apos', {match: /['’]/})
 MarkdownX.addRule('$quot', {match: /["”]/})
 MarkdownX.addRule('$lbrack', {match: /[\[［]/})
 MarkdownX.addRule('$rbrack', {match: /[\]］]/})
 MarkdownX.addRule('$lpar', {match: /[(（]/})
 MarkdownX.addRule('$rpar', {match: /[)）]/})
-```
