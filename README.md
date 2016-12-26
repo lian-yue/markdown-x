@@ -126,14 +126,14 @@ console.log(MarkdownXNode.toHtml())
 
 
     static MarkdownX.getVariable(name)             // 获得 变量解析
-    static MarkdownX.addVariable(name, cb)         // 添加,修改 变量解析
+    static MarkdownX.addVariable(name, option)     // 添加,修改 变量解析
     static MarkdownX.addVariable(name)             // 删除 变量解析
 
 
     MarkdownX.options = {}                               // 解析器选项
     MarkdownX.document = {}                              // 解析得到的对象
     MarkdownX.toNode(document.createElement('div'))      // 创建 dom 对象
-    MarkdownX.toText(separator?)     // 取得 text 节点
+    MarkdownX.toText(separator?)                         // 取得 text 节点
 
 ```
 
@@ -258,4 +258,40 @@ MarkdownX.addRule(name, option)
 // 添加 支持 at
 var name = 'md_at'
 MarkdownX.addRule(name, null)
+```
+
+
+
+## 让 Markdown 支持中文标签符号
+
+```js
+// 修改 空格
+MarkdownX.addRule('$space', {match: /[ \u00a0\u3000]/})
+
+// 修改 增加需要转译的 字符
+MarkdownX.addRule('$escape', {match: /[{}\[\]()<>'+\-\\`*:#!_~@$'.｀～＞＜＃＊ー＝＋：＿｜。．＠＄’”［］（）]/})
+
+// 添加各种全角属性
+MarkdownX.addRule('$grave', {match: /[`｀]/})
+MarkdownX.addRule('$tilde', {match: /[~～]/})
+MarkdownX.addRule('$gt', {match: /[>＞]/})
+MarkdownX.addRule('$lt', {match: /[<＜]/})
+MarkdownX.addRule('$num', {match: /[#＃]/})
+MarkdownX.addRule('$ast', {match: /[*＊]/})
+MarkdownX.addRule('$minus', {match: /[\-ー]/})
+MarkdownX.addRule('$plus', {match: /[+＋]/})
+MarkdownX.addRule('$equals', {match: /[=＝]/})
+MarkdownX.addRule('$colon', {match: /[:：]/})
+MarkdownX.addRule('$lowbar', {match: /[_＿]/})
+MarkdownX.addRule('$verbar', {match: /[|｜]/})
+MarkdownX.addRule('$doc', {match: /[.。．]/})
+MarkdownX.addRule('$bsol', {match: /\\/})
+MarkdownX.addRule('$commat', {match: /[@＠]/})
+MarkdownX.addRule('$dollar', {match: /[$＄]/})
+MarkdownX.addRule('$apos', {match: /['’]/})
+MarkdownX.addRule('$quot', {match: /["”]/})
+MarkdownX.addRule('$lbrack', {match: /[\[［]/})
+MarkdownX.addRule('$rbrack', {match: /[\]］]/})
+MarkdownX.addRule('$lpar', {match: /[(（]/})
+MarkdownX.addRule('$rpar', {match: /[)）]/})
 ```
