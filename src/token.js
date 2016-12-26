@@ -14,10 +14,30 @@ const TAG_NAME = /[ \t\r\n\0\x0B\u00a0\/>]/
 const TAG_END = /[ \t\r\n\0\x0B\u00a0>]/
 
 
-const DIFF_ADD = 1
-const DIFF_DELETE = 2
-const DIFF_REPLACE = 3
-
+const blacks = [
+  'base',
+  'html',
+  'meta',
+  'link',
+  'style',
+  'script',
+  'head',
+  'body',
+  'title',
+  'param',
+  'noframes',
+  'noscript',
+  'frameset',
+  'frame',
+  'iframe',
+  'object',
+  'applet',
+  'polygon',
+  'svg',
+  'dialog',
+  'command',
+  'embed',
+]
 
 
 class Token {
@@ -175,28 +195,6 @@ class Token {
     wbr: {inline: true},
 
     xmp: {},
-
-
-
-    base: null,
-    html: null,
-    meta: null,
-    link: null,
-    style: {inline: true, block: true, text: true, black: true},
-    script: {inline: true, block: true, text: true, black: true},
-    head: null,
-    body: null,
-    title: null,
-    noframes: null,
-    noscript: null,
-    frameset: null,
-    frame: null,
-    iframe: null,
-    applet: null,
-    polygon: null,
-    svg: null,
-    dialog: null,
-    command: null,
   }
 
   static attributes = {}
@@ -257,7 +255,11 @@ class Token {
   }
 
   static addRule(name, option) {
-    this.rules[name] = option
+    if (option) {
+      this.rules[name] = option
+    } else {
+      delete this.rules[name]
+    }
     return true
   }
 
@@ -266,12 +268,20 @@ class Token {
   }
 
   static addAttribute(name, call) {
-    this.attributes[name] = call
+    if (call) {
+      this.attributes[name] = call
+    } else {
+      delete this.attributes[name]
+    }
     return true
   }
 
   static addVariable(name, option) {
-    this.variables[name] = option
+    if (option) {
+      this.variables[name] = option
+    } else {
+      delete this.variables[name]
+    }
     return true
   }
 
@@ -344,7 +354,8 @@ class Token {
     this.options = Object.assign({}, this.constructor.options, options || {})
     this.parserRules()
     this.prepare(data)
-    this.parser()
+    this.prepareVariables()
+    this.filterAttributes()
   }
 
   escapeHtml(html, encode) {
@@ -384,9 +395,6 @@ class Token {
     var inlines = {}
     for (name in this.constructor.rules) {
       rule = this.constructor.rules[name]
-      if (!rule) {
-        continue
-      }
       rule = Object.assign({}, rule)
       rule.name = name
       if (rule.html == undefined) {
@@ -429,18 +437,13 @@ class Token {
     }
 
     // 处理优先级
-    documents = this.parserPriority(documents)
-    blocks = this.parserPriority(blocks)
-    inlines = this.parserPriority(inlines)
-
-    // 处理  regexp
-    documents = this.parserPriority(documents)
-    blocks = this.parserPriority(blocks)
-    inlines = this.parserPriority(inlines)
+    documents = this.priority(documents)
+    blocks = this.priority(blocks)
+    inlines = this.priority(inlines)
 
     // 处理 match
     var blockMatch = '((?:^|{{$newline}}){{$blank}}*?)(?:%s)(?:(?={{$newline}})|$)'
-    var inlineMatch = '((?:^|(?!{{$backslash}}).)(?:{{$backslash}}{2})*)(?:%s)'
+    var inlineMatch = '((?:^|(?!{{$bsol}}).)(?:{{$bsol}}{2})*)(?:%s)'
     this.documentMatch = this.parserMatch(documents, blockMatch)
     this.blockMatch = this.parserMatch(blocks, blockMatch)
     this.inlineMatch = this.parserMatch(inlines, inlineMatch)
@@ -478,23 +481,21 @@ class Token {
     return {regexp: this.regexp(new RegExp(regexp.replace('%s', matchs.join('|')), 'i')), rules: maps}
   }
 
-  parserPriority(rules) {
+  priority(objs) {
     var array = []
-    var rule
-    for (var name in rules) {
-      rule = rules[name]
+    for (var name in objs) {
       array.push({
         name,
-        rule,
+        obj: objs[name],
       })
     }
     array.sort(function(a, b) {
-      return (a.rule.priority || 50) - (b.rule.priority || 50)
+      return (a.obj.priority || 50) - (b.obj.priority || 50)
     })
     var results = {}
     var i
     for (i = 0; i < array.length; i++) {
-      results[array[i].name] = array[i].rule
+      results[array[i].name] = array[i].obj
     }
     return results
   }
@@ -567,11 +568,7 @@ class Token {
     }
 
     if (option) {
-      if (node.attributes) {
-        var attributes = node.attributes
-        node.attributes = {}
-        this.setAttributes(node, attributes)
-      } else {
+      if (!node.attributes) {
         node.attributes = {}
       }
 
@@ -731,24 +728,6 @@ class Token {
     return true
   }
 
-  setAttributes(node, attributes) {
-    var value
-    for (var name in attributes) {
-      value = attributes[name]
-      if (value === false || value === null || value === undefined) {
-        continue
-      }
-      if (this.constructor.attributes[name]) {
-        value = this.constructor.attributes[name].call(this, value, node, name)
-      } else if (node.nodeHtml) {
-        continue
-      }
-      if (value === false || value === null || value === undefined) {
-        continue
-      }
-      node.attributes[name] = value
-    }
-  }
 
   toText(separator, node) {
     if (!node) {
@@ -892,6 +871,10 @@ class Token {
         this.parentNode = child
         this.toNode(childNode)
         this.parentNode = this.parentNodeStack.pop()
+      } else {
+        while (childNode.childNodes.length) {
+          childNode.removeChild(childNode.childNodes[0])
+        }
       }
 
       // 设置 _markdownx
@@ -1009,17 +992,53 @@ class Token {
   }
 
 
-  parser() {
+  prepareVariables() {
+    var options = this.priority(this.constructor.variables)
     var option
-    var varName
     var variables
-    for (var name in this.variables) {
-      if (!(option = this.constructor.variables[name])) {
+    var varName
+    for (var name in options) {
+      variables = this.variables[name]
+      if (!variables) {
         continue
       }
-      variables = this.variables[name]
+      option = options[name]
       for (varName in variables) {
-        option.call(this, varName, variables[varName])
+        option.prepare.call(this, varName, variables[varName])
+      }
+    }
+  }
+
+  filterAttributes() {
+    var child
+
+    var name
+    var value
+    for (var i = 0; i < this.parentNode.children.length; i++) {
+      child = this.parentNode.children[i]
+      if (child.nodeName.charAt(0) != '#') {
+        for (name in child.attributes) {
+          value = child.attributes[name]
+          if (value === false || value === null || value === undefined) {
+            delete child.attributes[name]
+          } else if (this.constructor.attributes[name]) {
+            value = this.constructor.attributes[name].call(this, value, child, name)
+            if (value === false || value === null || value === undefined) {
+              delete child.attributes[name]
+            } else {
+              child.attributes[name] = value
+            }
+          } else if (child.nodeHtml) {
+            delete child.attributes[name]
+          }
+        }
+        // 解析子数据
+        if (child.children && child.children.length) {
+          this.parentNodeStack.push(this.parentNode)
+          this.parentNode = child
+          this.filterAttributes()
+          this.parentNode = this.parentNodeStack.pop()
+        }
       }
     }
   }
@@ -1185,15 +1204,15 @@ Token.addRule('$tab', {match: /(?:    |\t)/})
 Token.addRule('$blank', {match:/(?:{{$space}}|\t)/})
 Token.addRule('$trim', {match:/^((?:{{$blank}}|{{$newline}})*)([\s\S]*?)((?:{{$blank}}|{{$newline}})*)$/})
 Token.addRule('$escape', {match: /[{}\[\]()<>'+\-\\`*:#!_~@$'.]/})
-Token.addRule('$escape_replace', {match: /{{$backslash}}({{$escape}}|{{$newline}}|$)/g})
+Token.addRule('$escape_replace', {match: /{{$bsol}}({{$escape}}|{{$newline}}|$)/g})
 
 
 Token.addRule('$grave', {match: /`/})
 Token.addRule('$tilde', {match: /~/})
 Token.addRule('$gt', {match: />/})
 Token.addRule('$lt', {match: /</})
-Token.addRule('$number', {match: /\#/})
-Token.addRule('$asterisk', {match: /\*/})
+Token.addRule('$num', {match: /\#/})
+Token.addRule('$ast', {match: /\*/})
 Token.addRule('$minus', {match: /\-/})
 Token.addRule('$plus', {match: /\+/})
 Token.addRule('$equals', {match: /\=/})
@@ -1201,28 +1220,32 @@ Token.addRule('$colon', {match: /\:/})
 Token.addRule('$lowbar', {match: /_/})
 Token.addRule('$verbar', {match: /\|/})
 Token.addRule('$doc', {match: /\./})
-Token.addRule('$backslash', {match: /\\/})
+Token.addRule('$bsol', {match: /\\/})
 Token.addRule('$commat', {match: /\@/})
 Token.addRule('$dollar', {match: /\$/})
 Token.addRule('$apos', {match: /'/})
 Token.addRule('$quot', {match: /"/})
+Token.addRule('$lbrack', {match: /\[/})
+Token.addRule('$rbrack', {match: /\]/})
+Token.addRule('$lpar', {match: /\(/})
+Token.addRule('$rpar', {match: /\)/})
 Token.addRule('$quote', {match: /(?:{{$quot}}|{{$apos}})/})
 Token.addRule('$blocktext', {match: /(?:{{$blank}}*?{{$newline}}){2,}/})
 
 
 
 
-Token.addRule('$escape_backslash', {match: /[\s\S]*?(?!{{$backslash}}).(?:{{$backslash}}{2})*/})
+Token.addRule('$escape_bsol', {match: /[\s\S]*?(?!{{$bsol}}).(?:{{$bsol}}{2})*/})
 
 Token.addRule('$header_id_replace',{match: /<.+?>|{{$escape}}/g})
-Token.addRule('$link_image',{match: /\[((?:\[[^\]]*\]|[^\[\]]|\](?=[^\[]*\]))*)\](?:{{$blank}}|{{$newline}})?(?:\({{$blank}}*{{$lt}}?(.*?){{$gt}}?(?:{{$blank}}+{{$quote}}(.*?){{$quote}})?{{$blank}}*\)|\[([^\^\[\]]*)\])/})
+Token.addRule('$link_image',{match: /{{$lbrack}}((?:{{$lbrack}}(?:(?!{{$rbrack}})[\s\S])*{{$rbrack}}|(?!{{$lbrack}}|{{$rbrack}})[\s\S]|{{$rbrack}}(?=[^\[]*{{$rbrack}}))*){{$rbrack}}(?:{{$blank}}|{{$newline}})?(?:{{$lpar}}{{$blank}}*{{$lt}}?(.*?){{$gt}}?(?:{{$blank}}+{{$quote}}(.*?){{$quote}})?{{$blank}}*{{$rpar}}|{{$lbrack}}(.*?){{$rbrack}})/})
 
 
 
 
 
 Token.addRule('md_blockcode', {
-  match: /{{$tab}}{{$blank}}*(?!{{$blank}}.).*|({{$grave}}{3,}|{{$tilde}}{3,}){{$blank}}*(.*)/,
+  match: /{{$tab}}{{$blank}}*(?!{{$blank}})..*|({{$grave}}{3,}|{{$tilde}}{3,}){{$blank}}*(.*)/,
   block: true,
   priority: 10,
   prepare(match) {
@@ -1423,7 +1446,7 @@ Token.addRule(
 Token.addRule(
   'md_header',
   {
-    match: /({{$number}}{1,6}){{$blank}}*(.*?)\#*|((?!{{$blank}})..*){{$newline}}{{$blank}}*({{$equals}}|{{$minus}}){{$blank}}?(?:\4{{$blank}}?)*/,
+    match: /({{$num}}{1,6}){{$blank}}*(.*?){{$num}}*|((?!{{$blank}})..*){{$newline}}{{$blank}}*({{$equals}}|{{$minus}}){{$blank}}?(?:\4{{$blank}}?)*/,
     block: true,
     priority: 25,
     prepare(match) {
@@ -1450,7 +1473,7 @@ Token.addRule(
 Token.addRule(
   'md_list',
   {
-    match:/(?:({{$asterisk}}|{{$plus}}|{{$minus}})|(\d+{{$doc}})){{$blank}}(?:{{$blank}}?\[({{$space}}|x)\])?(.*)/,
+    match:/(?:({{$ast}}|{{$plus}}|{{$minus}})|(\d+{{$doc}})){{$blank}}(?:{{$blank}}?{{$lbrack}}({{$space}}|x){{$rbrack}})?(.*)/,
     block: true,
     priority: 30,
     prepare(match) {
@@ -1541,22 +1564,21 @@ Token.addRule(
 
         checkbox = checkboxs[i]
         if (checkbox) {
-          this.setAttributes(liNode, {class:'task-list-item'})
+          liNode.attributes.class = 'task-list-item'
           if (!node.attributes.class) {
-            this.setAttributes(node, {class:'task-list'})
+            node.attributes.class ='task-list'
           }
 
           checkboxNode = {
             nodeName:'input',
-            attributes: {},
+            attributes: {
+              type: 'checkbox',
+              class: 'task-list-item-checkbox',
+              disabled: true,
+              checked: checkbox.toLowerCase()== 'x'
+            },
             children: [],
           }
-          this.setAttributes(checkboxNode, {
-            type: 'checkbox',
-            class: 'task-list-item-checkbox',
-            disabled: true,
-            checked: checkbox.toLowerCase()== 'x'
-          })
           if (!liNode.children.length || liNode.children[0].nodeName != 'p') {
             liNode.children.splice(0, 0, checkboxNode)
           } else {
@@ -1580,14 +1602,14 @@ Token.addRule(
       var index
       var char
       var text = ''
-      var regexp = this.regexp(/({{$backslash}}|{{$verbar}})/)
+      var regexp = this.regexp(/({{$bsol}}|{{$verbar}})/)
 
       // 表头
       var thead = []
       data = match[1]
       while ((index = data.search(regexp)) != -1) {
         char = data.charAt(index)
-        if (char == '\\') {
+        if (this.rules.$bsol.match.test(char)) {
           text += data.substr(0, index + 2)
           data = data.substr(index + 2)
           continue
@@ -1647,7 +1669,7 @@ Token.addRule(
         text = ''
         while ((index = data.search(regexp)) != -1) {
           char = data.charAt(index)
-          if (char == '\\') {
+          if (this.rules.$bsol.match.test(char)) {
             text += data.substr(0, index + 2)
             data = data.substr(index + 2)
             continue
@@ -1732,7 +1754,7 @@ Token.addRule(
 Token.addRule(
   'md_hr',
   {
-    match: /({{$asterisk}}|{{$minus}}|{{$lowbar}}){{$blank}}?(?:\1{{$blank}}?){2,}/,
+    match: /({{$ast}}|{{$minus}}|{{$lowbar}}){{$blank}}?(?:\1{{$blank}}?){2,}/,
     block: true,
     priority: 40,
     prepare() {
@@ -1746,7 +1768,7 @@ Token.addRule(
 Token.addRule(
   'md_toc',
   {
-    match:/\[TOC\]/,
+    match:/{{$lbrack}}TOC{{$rbrack}}/,
     document: true,
     priority: 17,
     prepare() {
@@ -1764,7 +1786,7 @@ Token.addRule(
 Token.addRule(
   'md_footnote',
   {
-    match: /\[\^([^\[\]]+)\]{{$blank}}*{{$colon}}{{$blank}}*(.*)/,
+    match: /{{$lbrack}}\^(.*?){{$rbrack}}{{$blank}}*{{$colon}}{{$blank}}*{{$newline}}?{{$blank}}*(.*)/,
     document: true,
     priority: 22,
     prepare(match) {
@@ -1799,7 +1821,6 @@ Token.addRule(
         attributes: {
           class: 'footnote',
           id: this.options.prefix + 'footnote-' + id,
-          style: 'display:none',
         },
         children,
       }
@@ -1827,7 +1848,7 @@ Token.addRule(
 Token.addRule(
   'md_reflink',
   {
-    match: /\[([^\^\[\]]+)\]{{$blank}}*{{$colon}}{{$blank}}*{{$lt}}?((?!{{$blank}})..*?){{$gt}}?(?:{{$newline}}?{{$blank}}*(?:{{$lt}}|{{$quote}})(.*)(?:{{$gt}}|{{$quote}}))?/,
+    match: /{{$lbrack}}(.*?){{$rbrack}}{{$blank}}*{{$colon}}{{$blank}}*{{$newline}}?{{$blank}}*{{$lt}}?((?!{{$blank}})..*?){{$gt}}?(?:{{$newline}}?{{$blank}}*(?:{{$lt}}|{{$quote}})(.*)(?:{{$gt}}|{{$quote}}))?/,
     document: true,
     priority: 27,
     prepare(match) {
@@ -1911,7 +1932,7 @@ Token.addRule(
 Token.addRule(
   'md_strong',
   {
-    match: /(({{$lowbar}}|{{$asterisk}}){2})({{$escape_backslash}})\1(?!\2)/,
+    match: /(({{$lowbar}}|{{$ast}}){2})({{$escape_bsol}})\1(?!\2)/,
     inline: true,
     priority: 25,
     prepare(match) {
@@ -1927,7 +1948,7 @@ Token.addRule(
 Token.addRule(
   'md_em',
   {
-    match: /({{$lowbar}}|{{$asterisk}})({{$escape_backslash}})\1(?!\1)/,
+    match: /({{$lowbar}}|{{$ast}})({{$escape_bsol}})\1(?!\1)/,
     inline: true,
     priority: 30,
     prepare(match) {
@@ -1944,7 +1965,7 @@ Token.addRule(
 Token.addRule(
   'md_del',
   {
-    match: /(({{$tilde}}){2})({{$escape_backslash}})\1(?!\2)/,
+    match: /(({{$tilde}}){2})({{$escape_bsol}})\1(?!\2)/,
     inline: true,
     priority: 35,
     prepare(match) {
@@ -2006,7 +2027,7 @@ Token.addRule(
 Token.addRule(
   'md_autolink',
   {
-    match: /<([^ >]+?(:|@|\/)[^ >]+)>/,
+    match: /{{$lt}}((?!{{$gt}}|{{$lt}}|{{$space}}|\s).+?(:|@|\/)(?!{{$gt}}|{{$lt}}|{{$space}}|\s).+){{$gt}}/,
     inline: true,
     priority: 55,
     prepare(match) {
@@ -2031,7 +2052,7 @@ Token.addRule(
 Token.addRule(
   'md_url',
   {
-    match: /https?:\/\/(?:[0-9a-zA-Z_-]+\.)*[a-zA-Z]+(?:[?\/]([^\s<>,:;"'{}()\[\]])*)?/,
+    match: /https?:\/\/(?:[0-9a-z_-]+\.)*[a-z]+(?:[?\/]([^\s<>,:;"'{}()\[\]])*)?/,
     inline: true,
     priority: 60,
     prepare(match) {
@@ -2055,7 +2076,7 @@ Token.addRule(
 Token.addRule(
   'md_refnote',
   {
-    match: /\[\^([^\[\]]*)\]/,
+    match: /{{$lbrack}}\^(.*?){{$rbrack}}/,
     inline: true,
     priority: 65,
     prepare(match) {
@@ -2097,113 +2118,130 @@ Token.addRule(
 )
 
 
-Token.addVariable('image', function(varName, node) {
-  if (!this.variables.reflink || !this.variables.reflink[varName]) {
-    node.nodeName = '#text'
-    return
-  }
-  var reflink = this.variables.reflink[varName]
-  this.setAttributes(node, {
-    src: reflink.uri,
-    title: reflink.title,
-  })
-})
-
-
-Token.addVariable('link', function(varName, node) {
-  if (!this.variables.reflink || !this.variables.reflink[varName]) {
-    node.nodeName = '#text'
-    return
-  }
-  var reflink = this.variables.reflink[varName]
-  this.setAttributes(node, {
-    href: reflink.uri,
-    title: reflink.title,
-  })
-})
-
-
-Token.addVariable('refnote', function(varName, node) {
-  if (!this.variables.footnote || !this.variables.footnote[varName]) {
-    node.nodeName = '#text'
-    return
-  }
-  node.children = [
-    {
-      nodeName:'#text',
-      nodeValue: '['+ this.variables.footnote[varName].refnoteId +']'
+Token.addVariable('image', {
+  priority: 10,
+  prepare(varName, node) {
+    if (!this.variables.reflink || !this.variables.reflink[varName]) {
+      node.nodeName = '#text'
+      return
     }
-  ]
-})
-
-
-Token.addVariable('footnote', function(varName, node) {
-  this.document.children.splice(this.document.children.indexOf(node), 1)
-
-  if (!this.footnoteNode) {
-    this.footnoteNode = {
-      nodeName:'ol',
-      attributes: {},
-      children: [],
-    }
-    this.setAttributes(this.footnoteNode, {class:'footnotes'})
-    this.document.children.push(this.footnoteNode)
+    var reflink = this.variables.reflink[varName]
+    node.attributes.src = reflink.uri
+    node.attributes.title = reflink.title
   }
-
-  this.footnoteNode.children.push(node)
 })
 
 
-Token.addVariable('toc', function(varName, node) {
-  var ulStack = []
-  var ul = node
-  var ul2
-  var a
-  var child
-  var level
-  var level2
-  var index
-  for (var i = 0; i < this.document.children.length; i++) {
-    child = this.document.children[i]
-    if (child.nodeHtml || (level2 = ['h1', 'h2', 'h3', 'h4', 'h5', 'h6'].indexOf(child.nodeName)) == -1 || !child.attributes.id) {
-      continue
+Token.addVariable('link', {
+  priority: 10,
+  prepare(varName, node) {
+    if (!this.variables.reflink || !this.variables.reflink[varName]) {
+      node.nodeName = '#text'
+      return
     }
-    level2++
-    if (level) {
-      if (level2 > level) {
-        ul2 = {
-          nodeName: 'ul',
-          attributes: {},
-          children: [],
-        }
-        ulStack.push(ul)
-        ul.children[ul.children.length - 1].children.push(ul2)
-        ul = ul2
-      } else if (level2 < level && ul != node) {
-        while (level2 < level && ul != node) {
-          level--
-          ul = ulStack.pop()
+    var reflink = this.variables.reflink[varName]
+    node.attributes.href = reflink.uri
+    node.attributes.title = reflink.title
+  }
+})
+
+
+Token.addVariable('refnote', {
+  priority: 15,
+  prepare(varName, node) {
+    if (!this.variables.footnote || !this.variables.footnote[varName]) {
+      node.nodeName = '#text'
+      return
+    }
+    this.variables.footnote[varName].display = true
+    node.children = [
+      {
+        nodeName:'#text',
+        nodeValue: '['+ this.variables.footnote[varName].refnoteId +']'
+      }
+    ]
+  }
+})
+
+
+Token.addVariable('footnote', {
+  priority: 90,
+  prepare(varName, node) {
+    this.document.children.splice(this.document.children.indexOf(node), 1)
+    if (!node.display) {
+      return
+    }
+
+    if (!this.footnoteNode) {
+      this.footnoteNode = {
+        nodeName:'ol',
+        attributes: {
+          class: 'footnotes',
+        },
+        children: [],
+      }
+      this.document.children.push(this.footnoteNode)
+    }
+
+    this.footnoteNode.children.push(node)
+  }
+})
+
+
+Token.addVariable('toc', {
+  priority: 40,
+  prepare(varName, node) {
+    var ulStack = []
+    var ul = node
+    var ul2
+    var a
+    var child
+    var level
+    var level2
+    var index
+    for (var i = 0; i < this.document.children.length; i++) {
+      child = this.document.children[i]
+      if (child.nodeHtml || (level2 = ['h1', 'h2', 'h3', 'h4', 'h5', 'h6'].indexOf(child.nodeName)) == -1 || !child.attributes.id) {
+        continue
+      }
+      level2++
+      if (level) {
+        if (level2 > level) {
+          ul2 = {
+            nodeName: 'ul',
+            attributes: {},
+            children: [],
+          }
+          ulStack.push(ul)
+          ul.children[ul.children.length - 1].children.push(ul2)
+          ul = ul2
+        } else if (level2 < level && ul != node) {
+          while (level2 < level && ul != node) {
+            level--
+            ul = ulStack.pop()
+          }
         }
       }
-    }
-    level = level2
-    a = {
-      nodeName: 'a',
-      attributes: {},
-      children: [
-        {
-          nodeName: '#text',
-          nodeValue: this.toText('', child),
-        }
-      ],
-    }
-    this.setAttributes(a, {href: '#' + child.attributes.id})
+      level = level2
+      a = {
+        nodeName: 'a',
+        attributes: {
+          href: '#' + child.attributes.id,
+        },
+        children: [
+          {
+            nodeName: '#text',
+            nodeValue: this.toText('', child),
+          }
+        ],
+      }
 
-    ul.children.push({
-      nodeName: 'li',
-      attributes: {},
-      children: [a],
-    })
+      ul.children.push({
+        nodeName: 'li',
+        attributes: {},
+        children: [a],
+      })
+    }
   }
 })
 
@@ -2248,12 +2286,16 @@ Token.addAttribute('title', function (value) {
   return value
 })
 
+Token.addAttribute('value', function (value) {
+  return value
+})
+
 Token.addAttribute('alt', function (value) {
   return value
 })
 
-Token.addAttribute('style', function (value, nodeHtml) {
-  if (!nodeHtml) {
+Token.addAttribute('style', function (value, node) {
+  if (!node.nodeHtml) {
     return value
   }
   var results = []
@@ -2264,7 +2306,7 @@ Token.addAttribute('style', function (value, nodeHtml) {
   var index
   for (var i = 0; i < styles.length; i++) {
     style = styles[i]
-    index = style.indexOf(';')
+    index = style.indexOf(':')
     if (index == -1) {
       continue
     }
@@ -2273,7 +2315,7 @@ Token.addAttribute('style', function (value, nodeHtml) {
       continue
     }
     value = style.substr(index + 1).toLowerCase().trim()
-    if (value && !/^[^\(\)\[\]'"\:&;\\]$/.test(decodeURIComponent(this.unescapeHtml(value)))) {
+    if (value &&  /([^\(\)\[\]'"\:&;\\]|\#x)/i.test(decodeURIComponent(this.unescapeHtml(value)))) {
       continue
     }
     results.push(name + ':' + value)
@@ -2281,5 +2323,10 @@ Token.addAttribute('style', function (value, nodeHtml) {
   return results.join(';')
 })
 
+
+
+for (var i = 0; i < blacks.length; i++) {
+  Token.getRule(blacks[i]).black = true
+}
 
 module.exports = Token
