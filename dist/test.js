@@ -3959,7 +3959,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	});
 	
 	Token.addRule('md_header', {
-	  match: /({{$num}}{1,6}){{$blank}}*(.*?){{$num}}*|((?!{{$blank}})..*){{$newline}}{{$blank}}*({{$equals}}|{{$minus}}){{$blank}}?(?:\4{{$blank}}?)*/,
+	  match: /({{$num}}{1,6}){{$blank}}*(.*?){{$num}}*|((?!{{$blank}})..*){{$newline}}{{$blank}}*({{$equals}}|{{$minus}}){{$blank}}?(?:\4{{$blank}}?)+/,
 	  block: true,
 	  priority: 25,
 	  prepare: function prepare(match) {
