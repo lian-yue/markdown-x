@@ -1810,14 +1810,14 @@ Token.addRule(
       }
       var id = this.escapeId(match[1])
 
-      this.refnoteId = this.refnoteId || 0
-      this.refnoteId++
+      this.noteId = this.noteId || 0
+      this.noteId++
 
 
       var node = {
         nodeName: 'li',
         block: false,
-        refnoteId :this.refnoteId,
+        noteId :this.noteId,
         varName: ['footnote', match[1].toLowerCase()],
         attributes: {
           class: 'footnote',
@@ -1829,8 +1829,8 @@ Token.addRule(
       node.children.push({
         nodeName: 'a',
         attributes: {
-          href: '#'+ this.options.prefix + 'refnote-' + id,
-          title: this.options.toRefnote || 'Return to article',
+          href: '#'+ this.options.prefix + 'note-' + id,
+          title: this.options.toNote || 'Return to article',
         },
         children: [
           {
@@ -1990,7 +1990,8 @@ Token.addRule(
       return {
         nodeName: 'img',
         nodeValue: match[0],
-        varName: typeof match[4] == 'string' ? ['image', match[4].toLowerCase()] : null,
+        varName: typeof match[4] == 'string' ? ['image'] : null,
+        refName:  typeof match[4] == 'string' ? match[4].toLowerCase() : null,
         attributes: {
           alt: match[1],
           src: match[2],
@@ -2011,7 +2012,8 @@ Token.addRule(
       return {
         nodeName: 'a',
         nodeValue: match[0],
-        varName: typeof match[4] == 'string' ? ['link', match[4].toLowerCase()] : null,
+        varName: typeof match[4] == 'string' ? ['link'] : null,
+        refName:  typeof match[4] == 'string' ? match[4].toLowerCase() : null,
         attributes: {
           href: match[2],
           title: match[3],
@@ -2075,7 +2077,7 @@ Token.addRule(
 
 
 Token.addRule(
-  'md_refnote',
+  'md_note',
   {
     match: /{{$lbrack}}\^(.*?){{$rbrack}}/,
     inline: true,
@@ -2085,10 +2087,11 @@ Token.addRule(
       return {
         nodeName:'a',
         nodeValue: match[0],
-        varName: ['refnote', match[1].toLowerCase()],
+        varName: ['note'],
+        refName: match[1].toLowerCase(),
         attributes: {
-          class: 'refnote',
-          id: this.options.prefix +'refnote-' + id,
+          class: 'note',
+          id: this.options.prefix +'note-' + id,
           href: '#'+ this.options.prefix +'footnote-' + id,
           title: this.options.toFootnote || 'See footnote',
         },
@@ -2122,13 +2125,14 @@ Token.addRule(
 Token.addVariable('image', {
   priority: 10,
   prepare(varName, node) {
-    if (!this.variables.reflink || !this.variables.reflink[varName]) {
+    if (!this.variables.reflink || !this.variables.reflink[node.refName]) {
       node.nodeName = '#text'
       return
     }
-    var reflink = this.variables.reflink[varName]
+    var reflink = this.variables.reflink[node.refName]
     node.attributes.src = reflink.uri
     node.attributes.title = reflink.title
+    console.log(node.attributes)
   }
 })
 
@@ -2136,29 +2140,31 @@ Token.addVariable('image', {
 Token.addVariable('link', {
   priority: 10,
   prepare(varName, node) {
-    if (!this.variables.reflink || !this.variables.reflink[varName]) {
+    if (!this.variables.reflink || !this.variables.reflink[node.refName]) {
       node.nodeName = '#text'
       return
     }
-    var reflink = this.variables.reflink[varName]
+
+    var reflink = this.variables.reflink[node.refName]
     node.attributes.href = reflink.uri
     node.attributes.title = reflink.title
+    console.log(node.attributes)
   }
 })
 
 
-Token.addVariable('refnote', {
+Token.addVariable('note', {
   priority: 15,
   prepare(varName, node) {
-    if (!this.variables.footnote || !this.variables.footnote[varName]) {
+    if (!this.variables.footnote || !this.variables.footnote[node.refName]) {
       node.nodeName = '#text'
       return
     }
-    this.variables.footnote[varName].display = true
+    this.variables.footnote[node.refName].display = true
     node.children = [
       {
         nodeName:'#text',
-        nodeValue: '['+ this.variables.footnote[varName].refnoteId +']'
+        nodeValue: '['+ this.variables.footnote[node.refName].noteId +']'
       }
     ]
   }
