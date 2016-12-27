@@ -2767,7 +2767,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	      inlines = this.priority(inlines);
 	
 	      // 处理 match
-	      var blockMatch = '((?:^|{{$newline}}){{$blank}}*?)(?:%s)(?:(?={{$newline}})|$)';
+	      var blockMatch = '((?:^|{{$newline}}){{$blank}}*?)(?:%s)(?={{$blank}}*(?:{{$newline}})|$)';
 	      var inlineMatch = '((?:^|(?!{{$bsol}}).)(?:{{$bsol}}{2})*)(?:%s)';
 	      this.documentMatch = this.parserMatch(documents, blockMatch);
 	      this.blockMatch = this.parserMatch(blocks, blockMatch);
@@ -4457,7 +4457,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	});
 	
 	Token.addRule('md_autolink', {
-	  match: /{{$lt}}((?!{{$gt}}|{{$lt}}|{{$space}}|\s).+?(:|@|\/)(?!{{$gt}}|{{$lt}}|{{$space}}|\s).+){{$gt}}/,
+	  match: /{{$lt}}((?!{{$gt}}|{{$lt}}|{{$space}}|\s).+?(:|@|\/)(?!{{$gt}}|{{$lt}}|{{$space}}|\s).+?){{$gt}}/,
 	  inline: true,
 	  priority: 55,
 	  prepare: function prepare(match) {
