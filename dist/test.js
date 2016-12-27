@@ -3282,12 +3282,13 @@ return /******/ (function(modules) { // webpackBootstrap
 	      var data = this.pushData(after, block);
 	      var match;
 	      var value;
+	      var pos = { line: 0, ch: 0 };
 	      while (match = this.match()) {
 	        data._index = data.index;
 	        if (match.index) {
-	          this.pushText(data.after.substr(0, match.index), data.block);
-	          this.skip(match.index);
+	          this.pushText(data.after.substr(0, match.index), pos, data.block);
 	          data._index = data.index;
+	          pos = { line: data.line, ch: data.ch };
 	        }
 	
 	        value = match.rule.prepare.call(this, match.match);
@@ -3298,14 +3299,16 @@ return /******/ (function(modules) { // webpackBootstrap
 	          }
 	        }
 	        if (!value) {} else if (this.filter(value.nodeName)) {
+	          value.pos = pos;
 	          this.push(value, true);
 	        } else {
-	          this.push({ nodeName: '#text', nodeValue: data.before.substr(data._index) });
+	          this.push({ nodeName: '#text', nodeValue: data.before.substr(data._index), pos: pos });
 	        }
+	        pos = { line: data.line, ch: data.ch };
 	      }
 	
 	      if (data.after) {
-	        this.pushText(data.after, data.block);
+	        this.pushText(data.after, pos, data.block);
 	      }
 	      this.popData();
 	      return this.parentNode;
@@ -3432,22 +3435,34 @@ return /******/ (function(modules) { // webpackBootstrap
 	    }
 	  }, {
 	    key: "pushText",
-	    value: function pushText(text, block) {
+	    value: function pushText(text, pos, block) {
 	      if (block) {
-	        text = text.trim();
-	        if (!text) {
+	        if (!text.trim()) {
+	          this.skip(text.length);
 	          return false;
 	        }
 	        text = text.split(this.rules.$blocktext.match);
+	        var children;
 	        for (var i = 0; i < text.length; i++) {
-	          this.push({ nodeName: 'p', children: text[i] }, true);
+	          children = text[i].trim();
+	          if (children) {
+	            this.push({ nodeName: 'p', children: children, pos: pos }, true);
+	          }
+	          this.skip(text[i].length);
+	          i++;
+	          if (text[i]) {
+	            this.skip(text[i].length);
+	          }
+	          pos = { line: this.data.line, ch: this.data.ch };
 	        }
 	        return true;
 	      }
+	
+	      this.skip(text.length);
 	      if (!text || !(text = text.replace(this.rules.$escape_replace.match, '$1'))) {
 	        return false;
 	      }
-	      this.push({ nodeName: '#text', nodeValue: text });
+	      this.push({ nodeName: '#text', nodeValue: text, pos: pos });
 	      return true;
 	    }
 	  }, {
@@ -3752,7 +3767,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	Token.addRule('$lpar', { match: /\(/ });
 	Token.addRule('$rpar', { match: /\)/ });
 	Token.addRule('$quote', { match: /(?:{{$quot}}|{{$apos}})/ });
-	Token.addRule('$blocktext', { match: /(?:{{$blank}}*?{{$newline}}){2,}/ });
+	Token.addRule('$blocktext', { match: /((?:{{$blank}}*?{{$newline}}){2,})/ });
 	
 	Token.addRule('$escape_bsol', { match: /[\s\S]*?(?!{{$bsol}}).(?:{{$bsol}}{2})*/ });
 	
@@ -4523,7 +4538,6 @@ return /******/ (function(modules) { // webpackBootstrap
 	    var reflink = this.variables.reflink[node.refName];
 	    node.attributes.src = reflink.uri;
 	    node.attributes.title = reflink.title;
-	    console.log(node.attributes);
 	  }
 	});
 	
@@ -4538,7 +4552,6 @@ return /******/ (function(modules) { // webpackBootstrap
 	    var reflink = this.variables.reflink[node.refName];
 	    node.attributes.href = reflink.uri;
 	    node.attributes.title = reflink.title;
-	    console.log(node.attributes);
 	  }
 	});
 	
