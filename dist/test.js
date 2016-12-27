@@ -2879,8 +2879,13 @@ return /******/ (function(modules) { // webpackBootstrap
 	    key: "push",
 	    value: function push(node, pop) {
 	      var option = node.nodeName.charAt(0) == '#' ? false : this.rules[node.nodeName];
-	      if (node.nodeHtml && (!option || !option.html || option.black || this.parentNodeStack.length >= NESTING)) {
-	        return false;
+	      if (node.nodeHtml) {
+	        if (!option || !option.html || option.black || this.parentNodeStack.length >= NESTING) {
+	          return false;
+	        }
+	        if (option.prepare && !(node = option.prepare.call(this, node))) {
+	          return false;
+	        }
 	      }
 	
 	      this.parentNode.children.push(node);
