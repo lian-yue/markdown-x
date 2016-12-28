@@ -1471,6 +1471,9 @@ return /******/ (function(modules) { // webpackBootstrap
 	        }
 	      }
 	    } while (this.nextLine());
+	    if (children.length > 1 && !children[children.length - 1]) {
+	      children.pop();
+	    }
 	    return {
 	      nodeName: 'blockquote',
 	      children: children
