@@ -974,7 +974,7 @@ class Token {
         pos = {line: data.line, ch: data.ch}
       }
 
-      node = match.rule.prepare.call(this, match.match)
+      node = match.rule.prepare.call(this, match.match, pos)
       if (data.index == data._index) {
         this.skip(match.match[0].length)
         if (data.block) {
@@ -984,7 +984,9 @@ class Token {
       if (!node) {
 
       } else if (this.filter(node.nodeName)) {
-        node.pos = pos
+        if (!node.pos) {
+          node.pos = pos
+        }
         this.push(node, true)
       } else {
         this.push({nodeName: '#text', nodeValue: data.before.substr(data._index), pos})
@@ -1519,7 +1521,7 @@ Token.addRule(
     match:/(?:({{$ast}}|{{$plus}}|{{$minus}})|(\d+{{$doc}})){{$blank}}(?:{{$blank}}?{{$lbrack}}({{$space}}|x){{$rbrack}})?(.*)/,
     block: true,
     priority: 30,
-    prepare(match) {
+    prepare(match, pos) {
       var list = []
       var li = [match[4]]
       var checkboxs = [match[3]]
@@ -1588,6 +1590,7 @@ Token.addRule(
       var node = {
         nodeName: match[2] ? 'ol' : 'ul',
         children,
+        pos
       }
       this.push(node, true)
 
@@ -1832,7 +1835,7 @@ Token.addRule(
     match: /{{$lbrack}}\^(.*?){{$rbrack}}{{$blank}}*{{$colon}}{{$blank}}*{{$newline}}?{{$blank}}*(.*)/,
     document: true,
     priority: 22,
-    prepare(match) {
+    prepare(match, pos) {
       var children = [match[2]]
       var current
       var match2
@@ -1866,6 +1869,7 @@ Token.addRule(
           id: this.options.prefix + 'footnote-' + id,
         },
         children,
+        pos,
       }
       this.push(node, true)
       node.children.push({
@@ -1923,7 +1927,7 @@ Token.addRule(
     },
     inline: true,
     priority: 7,
-    prepare(match) {
+    prepare(match, pos) {
       var nodeName = match[2].toLowerCase()
       if (match[1]) {
         this.pop(nodeName)
@@ -1932,7 +1936,7 @@ Token.addRule(
       }
       this.skip(nodeName.length + 1)
       var attributes = this.prepareHtmlAttributes()
-      this.push({nodeName, attributes, nodeHtml: true})
+      this.push({nodeName, attributes, nodeHtml: true, pos})
     }
   }
 )

@@ -811,7 +811,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	          pos = { line: data.line, ch: data.ch };
 	        }
 	
-	        node = match.rule.prepare.call(this, match.match);
+	        node = match.rule.prepare.call(this, match.match, pos);
 	        if (data.index == data._index) {
 	          this.skip(match.match[0].length);
 	          if (data.block) {
@@ -819,7 +819,9 @@ return /******/ (function(modules) { // webpackBootstrap
 	          }
 	        }
 	        if (!node) {} else if (this.filter(node.nodeName)) {
-	          node.pos = pos;
+	          if (!node.pos) {
+	            node.pos = pos;
+	          }
 	          this.push(node, true);
 	        } else {
 	          this.push({ nodeName: '#text', nodeValue: data.before.substr(data._index), pos: pos });
@@ -1528,7 +1530,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	  match: /(?:({{$ast}}|{{$plus}}|{{$minus}})|(\d+{{$doc}})){{$blank}}(?:{{$blank}}?{{$lbrack}}({{$space}}|x){{$rbrack}})?(.*)/,
 	  block: true,
 	  priority: 30,
-	  prepare: function prepare(match) {
+	  prepare: function prepare(match, pos) {
 	    var list = [];
 	    var li = [match[4]];
 	    var checkboxs = [match[3]];
@@ -1595,7 +1597,8 @@ return /******/ (function(modules) { // webpackBootstrap
 	
 	    var node = {
 	      nodeName: match[2] ? 'ol' : 'ul',
-	      children: children
+	      children: children,
+	      pos: pos
 	    };
 	    this.push(node, true);
 	
@@ -1809,7 +1812,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	  match: /{{$lbrack}}\^(.*?){{$rbrack}}{{$blank}}*{{$colon}}{{$blank}}*{{$newline}}?{{$blank}}*(.*)/,
 	  document: true,
 	  priority: 22,
-	  prepare: function prepare(match) {
+	  prepare: function prepare(match, pos) {
 	    var children = [match[2]];
 	    var current;
 	    var match2;
@@ -1841,7 +1844,8 @@ return /******/ (function(modules) { // webpackBootstrap
 	        class: 'footnote',
 	        id: this.options.prefix + 'footnote-' + id
 	      },
-	      children: children
+	      children: children,
+	      pos: pos
 	    };
 	    this.push(node, true);
 	    node.children.push({
@@ -1886,7 +1890,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	
 	  inline: true,
 	  priority: 7,
-	  prepare: function prepare(match) {
+	  prepare: function prepare(match, pos) {
 	    var nodeName = match[2].toLowerCase();
 	    if (match[1]) {
 	      this.pop(nodeName);
@@ -1895,7 +1899,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	    }
 	    this.skip(nodeName.length + 1);
 	    var attributes = this.prepareHtmlAttributes();
-	    this.push({ nodeName: nodeName, attributes: attributes, nodeHtml: true });
+	    this.push({ nodeName: nodeName, attributes: attributes, nodeHtml: true, pos: pos });
 	  }
 	});
 	
