@@ -4503,7 +4503,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	});
 	
 	Token.addRule('md_url', {
-	  match: /https?:\/\/(?:[0-9a-z_-]+\.)*[a-z]+(?:[?\/]([^\s<>,:;"'{}()\[\]])*)?/,
+	  match: /https?:\/\/(?:[0-9a-z_-]+\.)*[a-z]+(?:[?\/]([^\s<>,;"'{}()\[\]])*)?/,
 	  inline: true,
 	  priority: 60,
 	  prepare: function prepare(match) {
