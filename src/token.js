@@ -1261,7 +1261,7 @@ Token.addRule('$blocktext', {match: /((?:{{$blank}}*?{{$newline}}){2,})/})
 Token.addRule('$escape_bsol', {match: /[\s\S]*?(?!{{$bsol}}).(?:{{$bsol}}{2})*/})
 
 Token.addRule('$header_id_replace',{match: /<.+?>|{{$escape}}/g})
-Token.addRule('$link_image',{match: /{{$lbrack}}((?:{{$lbrack}}(?:(?!{{$rbrack}})[\s\S])*{{$rbrack}}|(?!{{$lbrack}}|{{$rbrack}})[\s\S]|{{$rbrack}}(?=[^\[]*{{$rbrack}}))*){{$rbrack}}(?:{{$blank}}|{{$newline}})?(?:{{$lpar}}{{$blank}}*{{$lt}}?(.*?){{$gt}}?(?:{{$blank}}+{{$quote}}(.*?){{$quote}})?{{$blank}}*{{$rpar}}|{{$lbrack}}(.*?){{$rbrack}})/})
+Token.addRule('$link_image',{match: /{{$lbrack}}((?:{{$lbrack}}(?:(?!{{$rbrack}})[\s\S])*{{$rbrack}}|(?!{{$lbrack}}|{{$rbrack}})[\s\S]|{{$rbrack}}(?=[^\[]*{{$rbrack}}))*){{$rbrack}}{{$blank}}{0,3}(?:{{$newline}}{{$blank}}*)?(?:{{$lpar}}{{$blank}}*{{$lt}}?(.*?){{$gt}}?(?:{{$blank}}+{{$quote}}(.*?){{$quote}})?{{$blank}}*{{$rpar}}|{{$lbrack}}(.*?){{$rbrack}})/})
 
 
 
@@ -1515,12 +1515,27 @@ Token.addRule(
   }
 )
 
+
+Token.addRule(
+  'md_hr',
+  {
+    match: /({{$ast}}|{{$minus}}|{{$lowbar}}){{$blank}}?(?:\1{{$blank}}?){2,}/,
+    block: true,
+    priority: 30,
+    prepare() {
+      return {nodeName: 'hr'}
+    }
+  },
+)
+
+
+
 Token.addRule(
   'md_list',
   {
     match:/(?:({{$ast}}|{{$plus}}|{{$minus}})|(\d+{{$doc}})){{$blank}}(?:{{$blank}}?{{$lbrack}}({{$space}}|x){{$rbrack}})?(.*)/,
     block: true,
-    priority: 30,
+    priority: 35,
     prepare(match, pos) {
       var list = []
       var li = [match[4]]
@@ -1642,7 +1657,7 @@ Token.addRule(
   {
     match:/((?:.*?({{$verbar}}))+.*?){{$newline}}({{$blank}}*\2?(?:(?:{{$blank}}*(?:{{$colon}}|{{$minus}}){{$blank}}*)+\2)+(?:{{$blank}}*(?:{{$colon}}|{{$minus}}))+{{$blank}}*\2?){{$blank}}*((?:{{$newline}}(?:.*\2)+.*)+)/,
     block: true,
-    priority: 35,
+    priority: 40,
     prepare(match) {
       var data
       var index
@@ -1796,18 +1811,6 @@ Token.addRule(
 
 
 
-
-Token.addRule(
-  'md_hr',
-  {
-    match: /({{$ast}}|{{$minus}}|{{$lowbar}}){{$blank}}?(?:\1{{$blank}}?){2,}/,
-    block: true,
-    priority: 40,
-    prepare() {
-      return {nodeName: 'hr'}
-    }
-  },
-)
 
 
 
@@ -2033,11 +2036,12 @@ Token.addRule(
     inline: true,
     priority: 45,
     prepare(match) {
+      var isVar = typeof match[4] == 'string'
       return {
         nodeName: 'img',
         nodeValue: match[0],
-        varName: typeof match[4] == 'string' ? ['image'] : null,
-        refName:  typeof match[4] == 'string' ? match[4].toLowerCase() : null,
+        varName: isVar ? ['image'] : null,
+        refName:  isVar ? match[match[4] ? 4: 1].toLowerCase() : null,
         attributes: {
           alt: match[1],
           src: match[2],
@@ -2055,11 +2059,12 @@ Token.addRule(
     inline: true,
     priority: 50,
     prepare(match) {
+      var isVar = typeof match[4] == 'string'
       return {
         nodeName: 'a',
         nodeValue: match[0],
-        varName: typeof match[4] == 'string' ? ['link'] : null,
-        refName:  typeof match[4] == 'string' ? match[4].toLowerCase() : null,
+        varName: isVar ? ['link'] : null,
+        refName:  isVar? match[match[4] ? 4: 1].toLowerCase() : null,
         attributes: {
           href: match[2],
           title: match[3],
