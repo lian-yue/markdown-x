@@ -964,7 +964,7 @@ class Token {
     }
     var data = this.pushData(after, block)
     var match
-    var value
+    var node
     var pos = {line:0, ch:0}
     while (match = this.match()) {
       data._index = data.index
@@ -974,18 +974,18 @@ class Token {
         pos = {line: data.line, ch: data.ch}
       }
 
-      value = match.rule.prepare.call(this, match.match)
+      node = match.rule.prepare.call(this, match.match)
       if (data.index == data._index) {
         this.skip(match.match[0].length)
         if (data.block) {
           this.nextLine()
         }
       }
-      if (!value) {
+      if (!node) {
 
-      } else if (this.filter(value.nodeName)) {
-        value.pos = pos
-        this.push(value, true)
+      } else if (this.filter(node.nodeName)) {
+        node.pos = pos
+        this.push(node, true)
       } else {
         this.push({nodeName: '#text', nodeValue: data.before.substr(data._index), pos})
       }
@@ -1342,13 +1342,24 @@ Token.addRule(
       var nodeValue
 
       var attributes
-
+      var pos
+      var node
       while ((index = data.after.indexOf('<')) != -1 && (!nodeName || parentNode != this.parentNode || data.after.search(/^.*(<\!--|<\/?[a-zA-Z].*>)/) != -1)) {
         if (index) {
           this.pushHtmlText(data.after.substr(0, index))
         }
 
-        this.skip(index + 1)
+        if (parentNode == this.parentNode) {
+          this.skip(index)
+          pos = {line: data.line, ch: data.sh}
+          this.skip(1)
+        } else {
+          this.skip(index + 1)
+          if (pos) {
+            pos = null
+          }
+        }
+
         char = data.after.charAt(0)
 
         // 最后了
@@ -1365,7 +1376,11 @@ Token.addRule(
             nodeValue = index == -1 ? data.after : data.after.substr(0, index)
             this.skip(index == -1 ? data.after.length : index + 3)
             this.saveHtmlText()
-            this.push({nodeName:'#comment', nodeValue})
+            node = {nodeName:'#comment', nodeValue}
+            if (pos) {
+              node.pos = pos
+            }
+            this.push(node)
           } else {
             this.pushHtmlText('<')
           }
@@ -1407,7 +1422,11 @@ Token.addRule(
         nodeName = nodeName.trim().toLowerCase()
 
         this.saveHtmlText()
-        this.push({nodeName, attributes, nodeHtml: true})
+        node = {nodeName, attributes, nodeHtml: true}
+        if (pos) {
+          node.pos = pos
+        }
+        this.push(node)
       }
 
       var value = this.currentLine().value
