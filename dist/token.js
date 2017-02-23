@@ -642,6 +642,8 @@ return /******/ (function(modules) { // webpackBootstrap
 	      var diffKeys = {};
 	      var diffKey;
 	      var nodeValue;
+	      var ii = 0;
+	      var htmlNode;
 	      for (var i = 0; i < this.parentNode.children.length; i++) {
 	        child = this.parentNode.children[i];
 	        if (!diffKeys[child.nodeName]) {
@@ -649,11 +651,38 @@ return /******/ (function(modules) { // webpackBootstrap
 	        } else {
 	          diffKeys[child.nodeName]++;
 	        }
+	
 	        diffKey = child.nodeName + ',' + diffKeys[child.nodeName];
+	
+	        // document 的 html  因为可能出现多个 dom  单独算
+	        if (child.nodeName == '#html' && !Node.createHtmlNode) {
+	          if (!htmlNode) {
+	            htmlNode = Node.createElement('div');
+	          }
+	          htmlNode.innerHTML += child.nodeValue;
+	          // node.innerHTML += child.nodeValue
+	
+	          htmlNode.childNodes2 = [];
+	          for (var _i2 = 0; _i2 < htmlNode.childNodes.length; _i2++) {
+	            htmlNode.childNodes2.push(htmlNode.childNodes[_i2]);
+	          }
+	
+	          for (var _i3 = 0; _i3 < htmlNode.childNodes2.length; _i3++) {
+	            if (node.childNodes[ii]) {
+	              node.insertBefore(htmlNode.childNodes2[_i3], node.childNodes[ii]);
+	            } else {
+	              node.appendChild(htmlNode.childNodes2[_i3]);
+	            }
+	            ii++;
+	          }
+	          continue;
+	        }
 	
 	        if (!nodeChildren[diffKey]) {
 	          // 创建
-	          if (child.nodeName == '#text') {
+	          if (child.nodeName == '#html') {
+	            childNode = Node.createHtmlNode(child.nodeValue);
+	          } else if (child.nodeName == '#text') {
 	            childNode = Node.createTextNode(this.unescapeHtml(child.nodeValue));
 	          } else if (child.nodeName == '#comment') {
 	            childNode = Node.createComment(child.nodeValue);
@@ -670,7 +699,11 @@ return /******/ (function(modules) { // webpackBootstrap
 	          delete nodeChildren[diffKey];
 	
 	          // diff 算法
-	          if (childNode.nodeName == '#text') {
+	          if (childNode.nodeName == '#html') {
+	            if (nodeValue != childNode.nodeValue) {
+	              childNode.nodeValue = nodeValue;
+	            }
+	          } else if (childNode.nodeName == '#text') {
 	            nodeValue = this.unescapeHtml(child.nodeValue);
 	            if (nodeValue != childNode.nodeValue) {
 	              childNode.nodeValue = nodeValue;
@@ -701,13 +734,14 @@ return /******/ (function(modules) { // webpackBootstrap
 	        }
 	
 	        // 不相同
-	        if (childNode != node.childNodes[i]) {
-	          if (node.childNodes[i]) {
-	            node.insertBefore(childNode, node.childNodes[i]);
+	        if (childNode != node.childNodes[ii]) {
+	          if (node.childNodes[ii]) {
+	            node.insertBefore(childNode, node.childNodes[ii]);
 	          } else {
 	            node.appendChild(childNode);
 	          }
 	        }
+	        ii++;
 	
 	        // 解析子数据
 	        if (child.children && child.children.length && child.nodeName.charAt(0) != '#') {

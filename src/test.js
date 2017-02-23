@@ -1,7 +1,37 @@
 const Token = require('./token');
 const Node = require('./node');
+const hljs = require('highlight.js');
 
 
+;(function(){
+  var blockcode = Token.getRule('md_blockcode')
+  if (!blockcode.oldPrepare) {
+    blockcode.oldPrepare = blockcode.prepare
+  }
+  blockcode.prepare = function(...args) {
+    var node = blockcode.oldPrepare.apply(this, args)
+    if (!node) {
+      return node
+    }
+    var lang = ''
+    var matches = node.attributes.class.match(/highlight-source\-(\w+)$/)
+    if (matches) {
+      lang = matches[1]
+    }
+    var nodeValue = node.children[0].children[0].nodeValue
+    if (lang && hljs.getLanguage(lang)) {
+      nodeValue = hljs.highlight(lang, nodeValue).value
+    } else {
+      nodeValue = hljs.highlightAuto(nodeValue).value
+    }
+    node.attributes.class = 'hljs'
+    node.children[0].children[0] = {
+      nodeName: '#html',
+      nodeValue: nodeValue,
+    }
+    return node
+  }
+})();
 
 (async function() {
 

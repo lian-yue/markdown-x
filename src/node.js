@@ -34,6 +34,8 @@ class Node {
 
   static DOCUMENT_NODE = 9
 
+  static HTML_NODE = 99
+
 
   static createElement(tag) {
     return new this(null, Node.ELEMENT_NODE, tag)
@@ -45,6 +47,10 @@ class Node {
 
   static createTextNode(data) {
     return new this(data, Node.TEXT_NODE)
+  }
+
+  static createHtmlNode(data) {
+    return new this(data, Node.HTML_NODE)
   }
 
 
@@ -80,6 +86,11 @@ class Node {
       }
       case Node.COMMENT_NODE: {
         this.nodeName = '#comment'
+        this.nodeValue = nodeValue
+        return
+      }
+      case Node.HTML_NODE: {
+        this.nodeName = '#html'
         this.nodeValue = nodeValue
         return
       }
@@ -221,6 +232,9 @@ class Node {
       }
       case Node.TEXT_NODE: {
         return this.constructor.escapeHtml(this.nodeValue)
+      }
+      case Node.HTML_NODE: {
+        return this.nodeValue
       }
       default: {
         return ''

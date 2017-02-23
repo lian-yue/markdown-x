@@ -802,6 +802,8 @@ class Token {
     var diffKeys = {}
     var diffKey
     var nodeValue
+    var ii = 0
+    var htmlNode
     for (var i = 0; i < this.parentNode.children.length; i++) {
       child = this.parentNode.children[i]
       if (!diffKeys[child.nodeName]) {
@@ -809,12 +811,38 @@ class Token {
       } else {
         diffKeys[child.nodeName]++
       }
+
       diffKey = child.nodeName + ',' + diffKeys[child.nodeName]
 
+      // document 的 html  因为可能出现多个 dom  单独算
+      if (child.nodeName =='#html' && !Node.createHtmlNode) {
+        if (!htmlNode) {
+          htmlNode = Node.createElement('div')
+        }
+        htmlNode.innerHTML += child.nodeValue
+        // node.innerHTML += child.nodeValue
+
+        htmlNode.childNodes2 = []
+        for (let i = 0; i < htmlNode.childNodes.length; i++) {
+          htmlNode.childNodes2.push(htmlNode.childNodes[i])
+        }
+
+        for (let i = 0; i < htmlNode.childNodes2.length; i++) {
+          if (node.childNodes[ii]) {
+            node.insertBefore(htmlNode.childNodes2[i], node.childNodes[ii])
+          } else {
+            node.appendChild(htmlNode.childNodes2[i])
+          }
+          ii++
+        }
+        continue
+      }
 
       if (!nodeChildren[diffKey]) {
         // 创建
-        if (child.nodeName =='#text') {
+        if (child.nodeName =='#html') {
+          childNode = Node.createHtmlNode(child.nodeValue)
+        } else if (child.nodeName =='#text') {
           childNode = Node.createTextNode(this.unescapeHtml(child.nodeValue))
         } else if (child.nodeName =='#comment') {
           childNode = Node.createComment(child.nodeValue)
@@ -831,7 +859,11 @@ class Token {
         delete nodeChildren[diffKey]
 
         // diff 算法
-        if (childNode.nodeName == '#text') {
+        if (childNode.nodeName == '#html') {
+          if (nodeValue != childNode.nodeValue) {
+            childNode.nodeValue = nodeValue
+          }
+        } else if (childNode.nodeName == '#text') {
           nodeValue = this.unescapeHtml(child.nodeValue)
           if (nodeValue != childNode.nodeValue) {
             childNode.nodeValue = nodeValue
@@ -862,13 +894,14 @@ class Token {
       }
 
       // 不相同
-      if (childNode != node.childNodes[i]) {
-        if (node.childNodes[i]) {
-          node.insertBefore(childNode, node.childNodes[i])
+      if (childNode != node.childNodes[ii]) {
+        if (node.childNodes[ii]) {
+          node.insertBefore(childNode, node.childNodes[ii])
         } else {
           node.appendChild(childNode)
         }
       }
+      ii++
 
       // 解析子数据
       if (child.children && child.children.length && child.nodeName.charAt(0) != '#') {

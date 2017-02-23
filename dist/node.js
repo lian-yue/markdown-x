@@ -87,6 +87,11 @@ return /******/ (function(modules) { // webpackBootstrap
 	    value: function createTextNode(data) {
 	      return new this(data, Node.TEXT_NODE);
 	    }
+	  }, {
+	    key: 'createHtmlNode',
+	    value: function createHtmlNode(data) {
+	      return new this(data, Node.HTML_NODE);
+	    }
 	  }]);
 	
 	  function Node(nodeValue, nodeType, nodeName) {
@@ -119,6 +124,12 @@ return /******/ (function(modules) { // webpackBootstrap
 	      case Node.COMMENT_NODE:
 	        {
 	          this.nodeName = '#comment';
+	          this.nodeValue = nodeValue;
+	          return;
+	        }
+	      case Node.HTML_NODE:
+	        {
+	          this.nodeName = '#html';
 	          this.nodeValue = nodeValue;
 	          return;
 	        }
@@ -274,6 +285,10 @@ return /******/ (function(modules) { // webpackBootstrap
 	          {
 	            return this.constructor.escapeHtml(this.nodeValue);
 	          }
+	        case Node.HTML_NODE:
+	          {
+	            return this.nodeValue;
+	          }
 	        default:
 	          {
 	            return '';
@@ -305,6 +320,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	Node.TEXT_NODE = 3;
 	Node.COMMENT_NODE = 8;
 	Node.DOCUMENT_NODE = 9;
+	Node.HTML_NODE = 99;
 	
 	
 	module.exports = Node;
